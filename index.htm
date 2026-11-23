@@ -142,7 +142,7 @@
         <div class="flex flex-wrap items-center justify-center gap-3">
           <button onclick="importSample15Players()"
             class="px-6 py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-base shadow-md active:scale-95 transition-all">
-            ⚡ 一鍵建立 15 位範例球友（12 到場 + 3 遲到）
+            ⚡ 隨機生成 15 位球友（10男5女）
           </button>
           <button onclick="switchTab('roster')"
             class="px-6 py-3.5 rounded-2xl bg-slate-800 hover:bg-slate-900 text-white font-bold text-base shadow-md active:scale-95 transition-all">
@@ -349,7 +349,7 @@
           </button>
           <button onclick="importSample15Players()"
             class="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm shadow-sm active:scale-95 transition-all">
-            ⚡ 一鍵建立 15 位範例球友
+            ⚡ 隨機生成 15 位球友（10男5女）
           </button>
           <button onclick="toggleSelectAllAttendance(true)"
             class="px-3.5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm active:scale-95 transition-all">
@@ -521,13 +521,13 @@
           </p>
         </div>
         <div class="flex flex-wrap items-center gap-2.5 shrink-0">
-          <button onclick="runSimulation10Matches(false)"
-            class="px-5 py-3.5 rounded-2xl bg-white text-indigo-800 hover:bg-indigo-50 font-extrabold text-sm sm:text-base shadow-lg active:scale-95 transition-all">
-            ▶ 用目前出席名單模擬 10 場
-          </button>
           <button onclick="runSimulation10Matches(true)"
-            class="px-4 py-3.5 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-white font-extrabold text-xs sm:text-sm shadow-md active:scale-95 transition-all">
-            ⚡ 用 15 位範例球友模擬 10 場
+            class="px-5 py-3.5 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-white font-extrabold text-sm sm:text-base shadow-lg active:scale-95 transition-all">
+            ⚡ 用 10男5女 隨機名單跑 10 場
+          </button>
+          <button onclick="runSimulation10Matches(false)"
+            class="px-4 py-3.5 rounded-2xl bg-white text-indigo-800 hover:bg-indigo-50 font-extrabold text-xs sm:text-sm shadow-md active:scale-95 transition-all">
+            ▶ 用目前出席名單跑 10 場
           </button>
         </div>
       </div>
@@ -635,814 +635,100 @@
 
   <!-- ==================== 核心邏輯（純 Vanilla JS + localStorage） ==================== -->
   <script>
-    const STORAGE_KEY = 'badminton_queue_v5';
+    const STORAGE_KEY = 'badminton_queue_v4';
     const ALLOWED_LEVELS = [5, 6, 7, 8, 9, 10];
 
     let state = createInitialState();
     let activeTab = 'main';
     let swapSourceId = null;
-    let confirmCallback = null;
-    let lastSimResult = null;
+    // 常見台灣羽球友男／女暱稱池
+    const MALE_NAME_POOL = [
+      '阿明', '大衛', '冠宇', '志豪', '柏翰', '俊傑', '家豪', '宗翰', '承恩', '宇軒',
+      '建宏', '哲維', '育誠', '彥廷', '子軒', '俊宏', '偉哲', '明哲', '政宏', '凱文',
+      '阿傑', '阿宏', '阿瑋', '小張'
+    // 隨機生成 15 位球友（固定 10 男 5 女，涵蓋 5–10 級；預設 12 位已到場 + 3 位遲到待報到）
+    function generateRandom15Players10M5F() {
+      const maleNames = ['阿明', '大衛', '冠宇', '志豪', '柏翰', '俊傑', '家豪', '宗翰', '承恩', '宇軒', '建宏', '哲瑋', '彥廷', '子豪'];
+      const femaleNames = ['小美', '怡君', '佳穎', '雅婷', '佩珊', '思妤', '詩涵', '欣怡', '宜蓁', '語彤'];
 
-    function createInitialState() {
-      return {
-        defaultFee: 200,
-        roster: [],            // [{ id, name, level(5-10), gender('M'|'F'), fee(number) }]
-        attendance: {},        // { [id]: { gamesPlayed: 0, lastOffTime: 0, paused: false, joinedAt: 0, paid: false, fee: 200 } }
-        activeMatches: [],     // [{ id, seq, startTime, isManual: bool, teamA: [id, id], teamB: [id, id] }]
-        manualSlots: [null, null, null, null], // [A1, A2, B1, B2]
-        manualModeOverride: false,             // 第 3 場起是否臨時切換回手動模式
-        nextMatch: null,       // { teamA: [id, id], teamB: [id, id] } | null
-        secondQueue: [],       // [id, ...] up to 4
-        history: [],           // [{ id, seq, startTime, endTime, isManual: bool, matchType, teamA: [snap], teamB: [snap] }]
-        matchCounter: 1,
-        undoStack: []          // array of JSON strings (max 30)
+      const shuffle = (arr) => {
+        const copy = [...arr];
+        for (let i = copy.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [copy[i], copy[j]] = [copy[j], copy[i]];
+        }
+        return copy;
       };
-    }
 
-    // 15 位範例球友（8 男 7 女，涵蓋 5–10 級；預設前 12 位已到場、後 3 位尚未到場方便測試遲到報到）
-    function getSample15Template() {
-      return [
-        { name: '小美', level: 6,  gender: 'F', arrived: true },
-        { name: '怡君', level: 5,  gender: 'F', arrived: true },
-        { name: '佳穎', level: 7,  gender: 'F', arrived: true },
-        { name: '雅婷', level: 6,  gender: 'F', arrived: true },
-        { name: '佩珊', level: 8,  gender: 'F', arrived: true },
-        { name: '阿明', level: 8,  gender: 'M', arrived: true },
-        { name: '大衛', level: 10, gender: 'M', arrived: true },
-        { name: '冠宇', level: 7,  gender: 'M', arrived: true },
-        { name: '志豪', level: 9,  gender: 'M', arrived: true },
-        { name: '柏翰', level: 8,  gender: 'M', arrived: true },
-        { name: '俊傑', level: 6,  gender: 'M', arrived: true },
-        { name: '家豪', level: 7,  gender: 'M', arrived: true },
-        // 預設 3 位遲到球友（未到場，顯示於主頁快速報到列）
-        { name: '思妤', level: 5,  gender: 'F', arrived: false },
-        { name: '詩涵', level: 9,  gender: 'F', arrived: false },
-        { name: '宗翰', level: 10, gender: 'M', arrived: false }
-      ];
+      const randLevel = () => ALLOWED_LEVELS[Math.floor(Math.random() * ALLOWED_LEVELS.length)];
+
+      const pickedMales = shuffle(maleNames).slice(0, 10).map((name, idx) => ({
+        name,
+        level: idx < 6 ? ALLOWED_LEVELS[idx] : randLevel(),
+        gender: 'M'
+      }));
+
+      const pickedFemales = shuffle(femaleNames).slice(0, 5).map((name) => ({
+        name,
+        level: randLevel(),
+        gender: 'F'
+      }));
+
+      const combined = shuffle([...pickedMales, ...pickedFemales]);
+      // 前 12 位設為已到場，後 3 位設為遲到尚未到場
+      return combined.map((p, idx) => ({
+        ...p,
+        arrived: idx < 12
+      }));
     }
 
     // =========================================================================
     // 1. 純本機 localStorage 讀寫
     // =========================================================================
-    function clampLevel(lv) {
-      const n = Number(lv) || 7;
-      if (n < 5) return 5;
-      if (n > 10) return 10;
-      return Math.round(n);
-    }
-
-    function loadState() {
-      try {
-        const raw = localStorage.getItem(STORAGE_KEY);
-        if (!raw) return;
-        const parsed = JSON.parse(raw);
-        if (parsed && typeof parsed === 'object') {
-          state = { ...createInitialState(), ...parsed };
-          state.roster = (state.roster || []).map(p => ({
-            ...p,
-            level: clampLevel(p.level),
-            fee: typeof p.fee === 'number' ? p.fee : state.defaultFee
-          }));
-          if (!Array.isArray(state.manualSlots) || state.manualSlots.length !== 4) {
-            state.manualSlots = [null, null, null, null];
-          }
-          Object.keys(state.attendance || {}).forEach(pid => {
-            const p = state.roster.find(x => x.id === pid);
-            const att = state.attendance[pid];
-            if (typeof att.paid !== 'boolean') att.paid = false;
-            if (typeof att.fee !== 'number') att.fee = p ? p.fee : state.defaultFee;
-          });
-        }
-      } catch (err) {
-        console.warn('讀取本機存檔失敗，已重設：', err);
-        state = createInitialState();
-      }
-    }
-
-    function saveState() {
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-        updateSaveIndicator();
-      } catch (err) {
-        console.error('寫入本機存檔失敗：', err);
-        showToast('本機存檔失敗，請確認非無痕模式或瀏覽器空間充足', 'error');
-      }
-      renderAll();
-    }
-
-    function updateSaveIndicator() {
-      const nowStr = new Date().toLocaleTimeString('zh-TW', {
-        hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
-      });
-      const statusEl = document.getElementById('save-status');
-      const dotEl = document.getElementById('save-dot');
-      if (statusEl) statusEl.textContent = `💾 本機已存檔 (${nowStr})`;
-      if (dotEl) {
-        dotEl.classList.add('scale-150');
-        setTimeout(() => dotEl.classList.remove('scale-150'), 300);
-      }
-    }
-
-    // =========================================================================
-    // 2. Undo 狀態快照（最多 30 步）
-    // =========================================================================
-    function pushUndo(actionLabel) {
-      const snapshot = {
-        label: actionLabel,
-        defaultFee: state.defaultFee,
-        roster: state.roster,
-        attendance: state.attendance,
-        activeMatches: state.activeMatches,
-        manualSlots: state.manualSlots,
-        manualModeOverride: state.manualModeOverride,
-        nextMatch: state.nextMatch,
-        secondQueue: state.secondQueue,
-        history: state.history,
-        matchCounter: state.matchCounter
-      };
-      state.undoStack = [...(state.undoStack || []), JSON.stringify(snapshot)];
-      while (state.undoStack.length > 30) {
-        state.undoStack.shift();
-      }
-    }
-
-    function handleUndo() {
-      if (!state.undoStack || state.undoStack.length === 0) return;
-      cancelSwap();
-      const raw = state.undoStack.pop();
-      try {
-        const snap = JSON.parse(raw);
-        state.defaultFee = snap.defaultFee ?? 200;
-        state.roster = snap.roster || [];
-        state.attendance = snap.attendance || {};
-        state.activeMatches = snap.activeMatches || [];
-        state.manualSlots = Array.isArray(snap.manualSlots) && snap.manualSlots.length === 4
-          ? snap.manualSlots
-          : [null, null, null, null];
-        state.manualModeOverride = Boolean(snap.manualModeOverride);
-        state.nextMatch = snap.nextMatch || null;
-        state.secondQueue = snap.secondQueue || [];
-        state.history = snap.history || [];
-        state.matchCounter = snap.matchCounter || 1;
-        saveState();
-        showToast(`已回復上一步（原動作：${snap.label || '系統操作'}）`, 'info');
-      } catch (e) {
-        showToast('回復失敗：快照資料異常', 'error');
-      }
-    }
-
-    // =========================================================================
-    // 3. 輔助函式與高對比色標（5–10 級）
-    // =========================================================================
-    function getStartedMatchesCount() {
-      return (state.history || []).length + (state.activeMatches || []).length;
-    }
-
-    function isManualModeActive() {
-      return getStartedMatchesCount() < 2 || Boolean(state.manualModeOverride);
-    }
-
-    function getPlayerById(id) {
-      return state.roster.find(p => p.id === id) || null;
-    }
-
-    function getLevelMeta(level) {
-      const lv = clampLevel(level);
-      switch (lv) {
-        case 5:  return { label: 'Lv.5',  cls: 'bg-emerald-100 text-emerald-900 border-emerald-400' };
-        case 6:  return { label: 'Lv.6',  cls: 'bg-sky-100 text-sky-900 border-sky-400' };
-        case 7:  return { label: 'Lv.7',  cls: 'bg-amber-100 text-amber-950 border-amber-400' };
-        case 8:  return { label: 'Lv.8',  cls: 'bg-rose-100 text-rose-900 border-rose-400' };
-        case 9:  return { label: 'Lv.9',  cls: 'bg-purple-100 text-purple-950 border-purple-400' };
-        case 10: return { label: 'Lv.10', cls: 'bg-slate-900 text-amber-300 border-amber-500' };
-        default: return { label: `Lv.${lv}`, cls: 'bg-slate-100 text-slate-800 border-slate-300' };
-      }
-    }
-
-    function getLevelBadgeHTML(level) {
-      const meta = getLevelMeta(level);
-      return `<span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-black border ${meta.cls}">${meta.label}</span>`;
-    }
-
-    function getGenderBadgeHTML(gender) {
-      return gender === 'F'
-        ? `<span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-rose-100 text-rose-600 text-xs font-black shrink-0">♀</span>`
-        : `<span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-blue-100 text-blue-600 text-xs font-black shrink-0">♂</span>`;
-    }
-
-    function getMatchType(teamA, teamB) {
-      const all = [...teamA, ...teamB];
-      const fCount = all.filter(p => p.gender === 'F').length;
-      const mCount = all.filter(p => p.gender === 'M').length;
-      if (fCount === 4) return '女雙';
-      if (mCount === 4) return '男雙';
-      if (mCount === 2 && fCount === 2) return '混雙';
-      return '自由配';
-    }
-
-    function getMatchTypeBadgeHTML(type) {
-      const styles = {
-        '女雙': 'bg-rose-100 text-rose-800 border-rose-300',
-        '男雙': 'bg-blue-100 text-blue-800 border-blue-300',
-        '混雙': 'bg-purple-100 text-purple-800 border-purple-300',
-        '自由配': 'bg-slate-100 text-slate-700 border-slate-300'
-      };
-      return `<span class="inline-flex items-center px-2.5 py-0.5 rounded-lg text-xs font-extrabold border ${styles[type] || styles['自由配']}">${type}</span>`;
-    }
-
-    function getModeBadgeHTML(isManual) {
-      return isManual
-        ? `<span class="inline-flex items-center px-2 py-0.5 rounded-lg text-[11px] font-extrabold bg-amber-100 text-amber-900 border border-amber-300">✋ 手動</span>`
-        : `<span class="inline-flex items-center px-2 py-0.5 rounded-lg text-[11px] font-extrabold bg-blue-100 text-blue-800 border border-blue-300">🤖 自動</span>`;
-    }
-
-    function formatTime(ts) {
-      if (!ts) return '--:--';
-      return new Date(ts).toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit', hour12: false });
-    }
-
-    function escapeHTML(str) {
-      return String(str || '')
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;');
-    }
-
-    // =========================================================================
-    // 4. 排點演算法（第 3 場起自動運算 + 沙盒模擬共用）
-    // =========================================================================
-    function getOnCourtIds() {
-      const set = new Set();
-      for (const m of state.activeMatches) {
-        m.teamA.forEach(id => set.add(id));
-        m.teamB.forEach(id => set.add(id));
-      }
-      return set;
-    }
-
-    function getEligibleWaitingPlayers() {
-      const onCourt = getOnCourtIds();
-      const list = [];
-      for (const [pid, info] of Object.entries(state.attendance)) {
-        if (info.paused) continue;
-        if (onCourt.has(pid)) continue;
-        const p = getPlayerById(pid);
-        if (!p) continue;
-        list.push({
-          ...p,
-          gamesPlayed: info.gamesPlayed || 0,
-          lastOffTime: info.lastOffTime || 0,
-          joinedAt: info.joinedAt || 0
-        });
-      }
-      list.sort((a, b) => {
-        if (a.gamesPlayed !== b.gamesPlayed) return a.gamesPlayed - b.gamesPlayed;
-        if (a.lastOffTime !== b.lastOffTime) return a.lastOffTime - b.lastOffTime;
-        return a.joinedAt - b.joinedAt;
-      });
-      return list;
-    }
-
-    // 4 人最佳 2v2 分隊：2男2女強制對稱（1男1女 vs 1男1女），其餘取級數總和差最小
-    function computeBest2v2Split(players4) {
-      const males = players4.filter(p => p.gender === 'M');
-      const females = players4.filter(p => p.gender === 'F');
-
-      let combos = [];
-      if (males.length === 2 && females.length === 2) {
-        combos = [
-          { teamA: [males[0], females[0]], teamB: [males[1], females[1]] },
-          { teamA: [males[0], females[1]], teamB: [males[1], females[0]] }
-        ];
-      } else {
-        const [p0, p1, p2, p3] = players4;
-        combos = [
-          { teamA: [p0, p1], teamB: [p2, p3] },
-          { teamA: [p0, p2], teamB: [p1, p3] },
-          { teamA: [p0, p3], teamB: [p1, p2] }
-        ];
-      }
-
-      let best = combos[0];
-      let bestScore = Infinity;
-
-      for (const c of combos) {
-        const sumA = c.teamA[0].level + c.teamA[1].level;
-        const sumB = c.teamB[0].level + c.teamB[1].level;
-        const levelDiff = Math.abs(sumA - sumB);
-
-        const mA = c.teamA.filter(p => p.gender === 'M').length;
-        const mB = c.teamB.filter(p => p.gender === 'M').length;
-        const genderDiff = Math.abs(mA - mB);
-
-        const score = levelDiff * 10 + genderDiff * 2;
-        if (score < bestScore) {
-          bestScore = score;
-          best = c;
-        }
-      }
-
-      return {
-        teamA: best.teamA.map(p => p.id),
-        teamB: best.teamB.map(p => p.id),
-        teamAObjs: best.teamA,
-        teamBObjs: best.teamB,
-        levelDiff: Math.abs(
-          (best.teamA[0].level + best.teamA[1].level) -
-          (best.teamB[0].level + best.teamB[1].level)
-        )
-      };
-    }
-
-    function getCombinations(arr, k) {
-      const res = [];
-      function helper(start, path) {
-        if (path.length === k) {
-          res.push([...path]);
-          return;
-        }
-        for (let i = start; i <= arr.length - (k - path.length); i++) {
-          path.push(arr[i]);
-          helper(i + 1, path);
-          path.pop();
-        }
-      }
-      helper(0, []);
-      return res;
-    }
-
-    function pickSmartFour(sortedEligible, randomize = false) {
-      if (sortedEligible.length < 4) return null;
-
-      const minGames = sortedEligible[0].gamesPlayed;
-      let fairPool = sortedEligible.filter(p => p.gamesPlayed <= minGames + 1);
-      if (fairPool.length < 4) fairPool = [...sortedEligible];
-
-      const rankMap = new Map();
-      sortedEligible.forEach((p, idx) => rankMap.set(p.id, idx));
-
-      const females = fairPool.filter(p => p.gender === 'F');
-      const males = fairPool.filter(p => p.gender === 'M');
-
-      let candidateGroups = [];
-
-      // 優先序 1：四位女生（女雙）
-      if (females.length >= 4) {
-        candidateGroups = getCombinations(females.slice(0, 10), 4);
-      }
-      // 優先序 2：四位男生（男雙）
-      else if (males.length >= 4) {
-        candidateGroups = getCombinations(males.slice(0, 10), 4);
-      }
-      // 優先序 3：2 男 2 女（對稱混雙）
-      else if (males.length >= 2 && females.length >= 2) {
-        const mPairs = getCombinations(males.slice(0, 8), 2);
-        const fPairs = getCombinations(females.slice(0, 8), 2);
-        for (const mp of mPairs) {
-          for (const fp of fPairs) {
-            candidateGroups.push([...mp, ...fp]);
-          }
-        }
-      }
-      // 備援：公平池內任意 4 人
-      else {
-        candidateGroups = getCombinations(fairPool.slice(0, 8), 4);
-      }
-
-      if (candidateGroups.length === 0) {
-        return computeBest2v2Split(sortedEligible.slice(0, 4));
-      }
-
-      let bestGroup = candidateGroups[0];
-      let bestScore = Infinity;
-
-      for (const group of candidateGroups) {
-        const gamesPenalty = group.reduce((s, p) => s + (p.gamesPlayed - minGames) * 22, 0);
-        const rankPenalty = group.reduce((s, p) => s + (rankMap.get(p.id) || 0) * 1.8, 0);
-        const levels = group.map(p => p.level);
-        const spread = Math.max(...levels) - Math.min(...levels);
-        const split = computeBest2v2Split(group);
-
-        const spreadPenalty = spread <= 2 ? spread * 2.5 : spread * 7.5;
-        const splitPenalty = split.levelDiff * 9;
-        const jitter = randomize ? Math.random() * 12 : 0;
-
-        const total = gamesPenalty + rankPenalty + spreadPenalty + splitPenalty + jitter;
-        if (total < bestScore) {
-          bestScore = total;
-          bestGroup = group;
-        }
-      }
-
-      return computeBest2v2Split(bestGroup);
-    }
-
-    // 清理手動槽位中已失效（上場所、暫休、刪除、取消到場）的人員
-    function sanitizeManualSlots() {
-      const eligibleSet = new Set(getEligibleWaitingPlayers().map(p => p.id));
-      const seen = new Set();
-      state.manualSlots = (state.manualSlots || [null, null, null, null]).map(id => {
-        if (!id || !eligibleSet.has(id) || seen.has(id)) return null;
-        seen.add(id);
-        return id;
-      });
-    }
-
-    function syncQueues(forceRecompute = false, randomize = false) {
-      sanitizeManualSlots();
-
-      const eligible = getEligibleWaitingPlayers();
-      const eligibleSet = new Set(eligible.map(p => p.id));
-
-      let validNext = false;
-      if (!forceRecompute && state.nextMatch) {
-        const ids = [...state.nextMatch.teamA, ...state.nextMatch.teamB];
-        if (ids.length === 4 && new Set(ids).size === 4 && ids.every(id => eligibleSet.has(id))) {
-          validNext = true;
-        }
-      }
-
-      if (!validNext) {
-        if (eligible.length >= 4) {
-          const picked = pickSmartFour(eligible, randomize);
-          state.nextMatch = picked ? { teamA: picked.teamA, teamB: picked.teamB } : null;
-        } else {
-          state.nextMatch = null;
-        }
-      }
-
-      const usedInNext = new Set(
-        state.nextMatch ? [...state.nextMatch.teamA, ...state.nextMatch.teamB] : []
-      );
-      const remaining = eligible.filter(p => !usedInNext.has(p.id));
-
-      if (remaining.length >= 4) {
-        const secondPick = pickSmartFour(remaining, false);
-        state.secondQueue = secondPick ? [...secondPick.teamA, ...secondPick.teamB] : remaining.slice(0, 4).map(p => p.id);
-      } else {
-        state.secondQueue = remaining.map(p => p.id);
-      }
-    }
-
-    // =========================================================================
-    // 5. 手動開場排點（第 1、2 場）& 遲到球友快速報到 操作
-    // =========================================================================
-    function handlePickManualPlayer(playerId) {
-      if (state.manualSlots.includes(playerId)) return;
-      const openIdx = state.manualSlots.findIndex(s => s === null);
-      if (openIdx === -1) {
-        showToast('已選滿 4 位球友，點擊上方槽位可移除重選', 'warning');
-        return;
-      }
-      const p = getPlayerById(playerId);
-      pushUndo(`手動選入：${p?.name || '球友'}`);
-      state.manualSlots[openIdx] = playerId;
-      saveState();
-    }
-
-    function handleRemoveManualSlot(slotIdx) {
-      const pid = state.manualSlots[slotIdx];
-      if (!pid) return;
-      const p = getPlayerById(pid);
-      pushUndo(`移出槽位：${p?.name || '球友'}`);
-      state.manualSlots[slotIdx] = null;
-      saveState();
-    }
-
-    function handleClearManualSlots() {
-      if (state.manualSlots.every(s => s === null)) return;
-      pushUndo('清空手動已選球友');
-      state.manualSlots = [null, null, null, null];
-      saveState();
-      showToast('已清空手動已選槽位', 'info');
-    }
-
-    function handleAutoSplitManual() {
-      const ids = state.manualSlots.filter(Boolean);
-      if (ids.length < 4) {
-        showToast(`目前已選 ${ids.length} 人，請先選滿 4 位球友再進行自動分隊`, 'warning');
-        return;
-      }
-      const players4 = ids.map(getPlayerById).filter(Boolean);
-      if (players4.length !== 4) return;
-      pushUndo('手動排點自動分隊');
-      const split = computeBest2v2Split(players4);
-      state.manualSlots = [split.teamA[0], split.teamA[1], split.teamB[0], split.teamB[1]];
-      saveState();
-      showToast(`已完成平衡分隊（雙方級數差 ${split.levelDiff} 級）`, 'success');
-    }
-
-    function handleStartManualMatch() {
-      if (state.manualSlots.some(s => s === null)) {
-        showToast('請先選滿 4 位球友才能上場', 'warning');
-        return;
-      }
-      const [a1, a2, b1, b2] = state.manualSlots;
-      const seq = state.matchCounter;
-      pushUndo(`手動安排第 ${seq} 場上場`);
-
-      state.activeMatches.push({
-        id: 'match_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
-        seq,
-        startTime: Date.now(),
-        isManual: true,
-        teamA: [a1, a2],
-        teamB: [b1, b2]
-      });
-      state.matchCounter += 1;
-      state.manualSlots = [null, null, null, null];
-
-      // 第 2 場一旦開打，自動切換為第 3 場起的自動運算模式
-      const totalStarted = getStartedMatchesCount();
-      if (totalStarted >= 2) {
-        state.manualModeOverride = false;
-      }
-
-      syncQueues(true);
-      saveState();
-
-      if (totalStarted === 2) {
-        showToast(`第 ${seq} 場已手動上場！第 3 場起已自動切換為「🤖 自動運算排點」`, 'success');
-      } else {
-        showToast(`第 ${seq} 場已手動安排上場！`, 'success');
-      }
-    }
-
-    function toggleManualOverride(enableManual) {
-      cancelSwap();
-      pushUndo(enableManual ? '臨時切換為手動排點' : '切回自動運算排點');
-      state.manualModeOverride = Boolean(enableManual);
-      if (enableManual) {
-        state.manualSlots = [null, null, null, null];
-      } else {
-        syncQueues(false);
-      }
-      saveState();
-      showToast(enableManual ? '已臨時切換為「✋ 手動排點模式」' : '已切回「🤖 自動運算排點模式」', 'info');
-    }
-
-    // 遲到球友快速報到（不離開主畫面，一鍵加入排隊）
-    function handleQuickLatecomerCheckin(playerId) {
-      const p = getPlayerById(playerId);
-      if (!p || state.attendance[playerId]) return;
-      const now = Date.now();
-      pushUndo(`遲到報到：${p.name}`);
-      state.attendance[playerId] = {
-        gamesPlayed: 0,
-        lastOffTime: now,
-        paused: false,
-        joinedAt: now,
-        paid: false,
-        fee: typeof p.fee === 'number' ? p.fee : state.defaultFee
-      };
-      syncQueues(false);
-      saveState();
-      showToast(`🏃 ${p.name} 已快速報到並加入場下排隊！`, 'success');
-    }
-
-    // =========================================================================
-    // 6. 自動模式上場、一鍵下場（4人結束）、重新運算、互換、暫休
-    // =========================================================================
-    function handleStartNextMatch() {
-      if (!state.nextMatch) return;
-      cancelSwap();
-      const seq = state.matchCounter;
-      pushUndo(`自動安排第 ${seq} 場上場`);
-
-      state.activeMatches.push({
-        id: 'match_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
-        seq,
-        startTime: Date.now(),
-        isManual: false,
-        teamA: [...state.nextMatch.teamA],
-        teamB: [...state.nextMatch.teamB]
-      });
-      state.matchCounter += 1;
-      state.nextMatch = null;
-
-      syncQueues(false);
-      saveState();
-      showToast(`第 ${seq} 場已安排上場！`, 'success');
-    }
-
-    function handleEndMatch(matchId) {
-      const idx = state.activeMatches.findIndex(m => m.id === matchId);
-      if (idx === -1) return;
-      const match = state.activeMatches[idx];
-
-      cancelSwap();
-      pushUndo(`第 ${match.seq} 場一鍵下場`);
-
-      const now = Date.now();
-      const mapTeam = (ids) => ids.map(pid => {
-        if (state.attendance[pid]) {
-          state.attendance[pid].gamesPlayed = (state.attendance[pid].gamesPlayed || 0) + 1;
-          state.attendance[pid].lastOffTime = now;
-        }
-        const p = getPlayerById(pid);
-        return p
-          ? { id: p.id, name: p.name, level: p.level, gender: p.gender }
-          : { id: pid, name: '已刪除球友', level: 7, gender: 'M' };
-      });
-
-      const teamASnap = mapTeam(match.teamA);
-      const teamBSnap = mapTeam(match.teamB);
-
-      const entry = {
-        id: match.id,
-        seq: match.seq,
-        startTime: match.startTime,
-        endTime: now,
-        isManual: Boolean(match.isManual),
-        matchType: getMatchType(teamASnap, teamBSnap),
-        teamA: teamASnap,
-        teamB: teamBSnap
-      };
-
-      state.history = [entry, ...(state.history || [])];
-      state.activeMatches.splice(idx, 1);
-
-      syncQueues(false);
-      saveState();
-      showToast(`第 ${match.seq} 場（${entry.matchType}）已結束並寫入紀錄！`, 'success');
-    }
-
-    function handleReshuffleNext() {
-      const eligible = getEligibleWaitingPlayers();
-      if (eligible.length < 4) {
-        showToast('場下可用人數不足 4 人，無法重新運算', 'warning');
-        return;
-      }
-      cancelSwap();
-      pushUndo('重新運算下一組');
-      syncQueues(true, true);
-      saveState();
-      showToast('已重新運算下一組對戰組合', 'info');
-    }
-
-    function handleTogglePause(playerId, event) {
-      if (event) event.stopPropagation();
-      const att = state.attendance[playerId];
-      if (!att) return;
-      if (getOnCourtIds().has(playerId)) {
-        showToast('該球友正在場上，請先結束該場次再切換暫休', 'warning');
-        return;
-      }
-      const p = getPlayerById(playerId);
-      cancelSwap();
-      pushUndo(att.paused ? `${p?.name || '球友'} 回歸排點` : `${p?.name || '球友'} 暫休`);
-      att.paused = !att.paused;
-      syncQueues(false);
-      saveState();
-      showToast(att.paused ? `${p?.name} 已設為暫休` : `${p?.name} 已回歸排點`, 'info');
-    }
-
-    function handleSelectForSwap(playerId) {
-      if (isManualModeActive()) return;
-      const p = getPlayerById(playerId);
-      if (!p) return;
-
-      if (!swapSourceId) {
-        swapSourceId = playerId;
-        document.getElementById('swap-selected-name').textContent = p.name;
-        document.getElementById('swap-banner').classList.remove('hidden');
-        renderMainView();
-        return;
-      }
-
-      if (swapSourceId === playerId) {
-        cancelSwap();
-        return;
-      }
-
-      const p1 = getPlayerById(swapSourceId);
-      pushUndo(`互換位置：${p1?.name || ''} ↔ ${p.name}`);
-
-      const idA = swapSourceId;
-      const idB = playerId;
-      const swapInArr = (arr) => arr.map(id => id === idA ? '__TMP__' : id)
-                                    .map(id => id === idB ? idA : id)
-                                    .map(id => id === '__TMP__' ? idB : id);
-
-      if (state.nextMatch) {
-        state.nextMatch.teamA = swapInArr(state.nextMatch.teamA);
-        state.nextMatch.teamB = swapInArr(state.nextMatch.teamB);
-      }
-      state.secondQueue = swapInArr(state.secondQueue);
-
-      cancelSwap();
-      saveState();
-      showToast(`已互換位置：${p1?.name || ''} ↔ ${p.name}`, 'success');
-    }
-
-    function cancelSwap() {
-      swapSourceId = null;
-      const banner = document.getElementById('swap-banner');
-      if (banner) banner.classList.add('hidden');
-      if (activeTab === 'main') renderMainView();
-    }
-
-    // =========================================================================
-    // 7. 臨打記帳操作
-    // =========================================================================
-    function handleUpdateDefaultFee(val) {
-      const fee = Math.max(0, Number(val) || 0);
-      pushUndo(`修改預設臨打費為 $${fee}`);
-      state.defaultFee = fee;
-      saveState();
-      showToast(`預設臨打費已更新為 $${fee}`, 'info');
-    }
-
-    function confirmApplyDefaultFeeToAll() {
-      openConfirmModal(
-        '套用預設臨打費到今日全員',
-        `確定要將今日所有已到場球友的應繳金額統一設為 $${state.defaultFee} 嗎？（已繳／未繳狀態會保留）`,
-        () => {
-          pushUndo(`套用預設費用 $${state.defaultFee} 至今日全員`);
-          Object.keys(state.attendance).forEach(pid => {
-            state.attendance[pid].fee = state.defaultFee;
-          });
-          saveState();
-          showToast(`已將今日全員金額設為 $${state.defaultFee}`, 'success');
-        }
-      );
-    }
-
-    function handleTogglePaid(playerId) {
-      const att = state.attendance[playerId];
-      const p = getPlayerById(playerId);
-      if (!att) return;
-      pushUndo(`${p?.name || '球友'} 切換繳費狀態`);
-      att.paid = !att.paid;
-      saveState();
-      showToast(`${p?.name || '球友'} 已標記為「${att.paid ? '✅ 已繳' : '❌ 未繳'}」`, att.paid ? 'success' : 'info');
-    }
-
-    function handleChangePlayerFee(playerId, val) {
-      const att = state.attendance[playerId];
-      if (!att) return;
-      const fee = Math.max(0, Number(val) || 0);
-      pushUndo('修改球友臨打金額');
-      att.fee = fee;
-      const p = getPlayerById(playerId);
-      if (p) p.fee = fee;
-      saveState();
-    }
-
-    function confirmResetFees() {
-      openConfirmModal(
-        '🔄 重設今日繳費狀態',
-        '確定要將今日所有已到場球友的繳費狀態全部重設為「❌ 未繳」嗎？（不會影響場次紀錄與球友名冊）',
-        () => {
-          pushUndo('重設今日繳費狀態');
-          Object.keys(state.attendance).forEach(pid => {
-            state.attendance[pid].paid = false;
-          });
-          saveState();
-          showToast('今日繳費狀態已全部重設為未繳', 'info');
-        }
-      );
-    }
-
-    // =========================================================================
-    // 8. 名冊管理、範例 15 人、清除紀錄、JSON 備份
+    // 8. 名冊管理、隨機 15 人（10男5女）、清除紀錄、JSON 備份
     // =========================================================================
     function importSample15Players() {
-      const samples = getSample15Template();
-      pushUndo('一鍵建立 15 位範例球友');
+      const samples = generateRandom15Players10M5F();
+      pushUndo('隨機生成 15 位球友（10男5女）');
       const now = Date.now();
 
+      // 重建一組全新的 10 男 5 女測試名單，方便直接體驗前兩場手動排點與遲到報到
+      state.roster = [];
+      state.attendance = {};
+      state.activeMatches = [];
+      state.manualSlots = [null, null, null, null];
+      state.manualModeOverride = false;
+      state.nextMatch = null;
+      state.secondQueue = [];
+      state.history = [];
+      state.matchCounter = 1;
+
       samples.forEach((s, idx) => {
-        let existing = state.roster.find(p => p.name === s.name);
-        if (!existing) {
-          existing = {
-            id: 'sample_' + now + '_' + idx,
-            name: s.name,
-            level: s.level,
-            gender: s.gender,
-            fee: state.defaultFee
-          };
-          state.roster.push(existing);
-        }
-        if (s.arrived && !state.attendance[existing.id]) {
-          state.attendance[existing.id] = {
+        const player = {
+          id: 'rand_' + now + '_' + idx,
+          name: s.name,
+          level: s.level,
+          gender: s.gender,
+          fee: state.defaultFee
+        };
+        state.roster.push(player);
+
+        if (s.arrived) {
+          state.attendance[player.id] = {
             gamesPlayed: 0,
             lastOffTime: 0,
             paused: false,
             joinedAt: now + idx,
             paid: false,
-            fee: existing.fee ?? state.defaultFee
+            fee: state.defaultFee
           };
         }
       });
 
-      syncQueues(false);
+      syncQueues(true);
       saveState();
       switchTab('main');
-      showToast('已建立 15 位範例球友（12 位已到場 + 3 位遲到待報到），請手動排第 1、2 場！', 'success');
+      showToast('已隨機生成 15 位球友（10 男 5 女，12 位已到場 + 3 位遲到待報到）！', 'success');
     }
 
     function renderModalLevelButtons(selectedLevel) {
@@ -1732,7 +1018,7 @@
       }
 
       if (simPlayers.length < 8) {
-        const tpl = getSample15Template();
+        const tpl = generateRandom15Players10M5F();
         simPlayers = tpl.map((s, idx) => ({
           id: 'sim_' + idx,
           name: s.name,
@@ -1743,8 +1029,8 @@
           joinedAt: idx
         }));
         sourceLabel = forceUseSample
-          ? '使用內建 15 位範例球友（8 男 7 女，5–10 級）'
-          : '目前到場人數不足 8 人，自動改用 15 位範例球友（8 男 7 女，5–10 級）進行沙盒測試';
+          ? '隨機生成 15 位球友（10 男 5 女，5–10 級）'
+          : '目前到場人數不足 8 人，自動改用 10 男 5 女隨機名單（5–10 級）進行沙盒測試';
       }
 
       const simMap = new Map(simPlayers.map(p => [p.id, p]));
@@ -2039,6 +1325,10 @@
             : 'px-2 py-2.5 rounded-xl text-xs sm:text-sm font-extrabold transition-all flex flex-col sm:flex-row items-center justify-center gap-1 text-slate-600 hover:text-slate-900 hover:bg-white/60';
         }
       });
+      if (tab === 'sim' && !lastSimResult) {
+        runSimulation10Matches(true);
+        return;
+      }
       renderAll();
     }
 
@@ -2739,7 +2029,7 @@
         grid.innerHTML = `
           <div class="col-span-full py-10 text-center text-slate-400">
             <p class="font-bold text-base">尚無球友資料</p>
-            <p class="text-xs mt-1">請點擊上方「＋ 新增球友」或「⚡ 一鍵建立 15 位範例球友」</p>
+            <p class="text-xs mt-1">請點擊上方「＋ 新增球友」或「⚡ 隨機生成 15 位球友（10男5女）」</p>
           </div>
         `;
         return;
