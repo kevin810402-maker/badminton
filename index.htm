@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>羽球排點與臨打管理系統</title>
+  <title>羽球排點與上場管理系統</title>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Google Fonts: Inter & Noto Sans TC -->
@@ -49,7 +49,7 @@
   <!-- ==================== 頂部導覽與狀態列 ==================== -->
   <header class="sticky top-0 z-30 bg-white/95 backdrop-blur border-b border-slate-200 shadow-sm">
     <div class="max-w-7xl mx-auto px-3 sm:px-6 py-2.5 space-y-2.5">
-      <!-- 第一排：品牌、存檔狀態、快速模擬與回復上一步 -->
+      <!-- 第一排：品牌、存檔狀態、回復上一步 -->
       <div class="flex flex-wrap items-center justify-between gap-2">
         <div class="flex items-center gap-3">
           <div class="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center text-xl font-black shadow-sm shrink-0">
@@ -57,7 +57,7 @@
           </div>
           <div>
             <h1 class="text-base sm:text-lg font-extrabold tracking-tight text-slate-900 leading-tight">
-              羽球排點與臨打管理系統
+              羽球排點與上場管理系統
             </h1>
             <div class="flex items-center gap-1.5 text-xs font-semibold mt-0.5">
               <span id="save-dot" class="w-2 h-2 rounded-full bg-emerald-500 transition-transform duration-300"></span>
@@ -67,16 +67,9 @@
         </div>
 
         <div class="flex items-center gap-2">
-          <!-- 快速跳轉模擬 10 場 -->
-          <button onclick="switchTab('sim')"
-            class="flex items-center gap-1.5 px-3 py-2 rounded-xl font-bold text-xs sm:text-sm border-2 transition-all
-                   bg-indigo-50 border-indigo-300 text-indigo-800 hover:bg-indigo-100 active:scale-95 shadow-sm">
-            <span>🧪 模擬 10 場</span>
-          </button>
-
           <!-- 回復上一步 (Undo) -->
           <button id="btn-undo" onclick="handleUndo()" disabled
-            class="flex items-center gap-1.5 px-3 py-2 rounded-xl font-bold text-xs sm:text-sm border-2 transition-all
+            class="flex items-center gap-1.5 px-3.5 py-2 rounded-xl font-bold text-xs sm:text-sm border-2 transition-all
                    disabled:opacity-40 disabled:cursor-not-allowed
                    bg-amber-50 border-amber-300 text-amber-900 hover:bg-amber-100 active:scale-95 shadow-sm">
             <span>↩️ 回復上一步</span>
@@ -89,22 +82,22 @@
       <nav class="grid grid-cols-5 gap-1.5 bg-slate-100 p-1.5 rounded-2xl border border-slate-200">
         <button onclick="switchTab('main')" id="tab-btn-main"
           class="px-2 py-2.5 rounded-xl text-xs sm:text-sm font-extrabold transition-all flex flex-col sm:flex-row items-center justify-center gap-1 bg-white text-emerald-700 shadow-sm">
-          <span>🏸</span><span>場上排點</span>
+          <span>🏸</span><span>現場排點</span>
         </button>
-        <button onclick="switchTab('history')" id="tab-btn-history"
+        <button onclick="switchTab('roster')" id="tab-btn-roster"
           class="px-2 py-2.5 rounded-xl text-xs sm:text-sm font-extrabold transition-all flex flex-col sm:flex-row items-center justify-center gap-1 text-slate-600 hover:text-slate-900">
-          <span>📜</span><span>場次紀錄</span>
-          <span id="nav-history-count" class="px-1.5 py-0.5 text-[11px] rounded-full bg-slate-200 text-slate-700">0</span>
+          <span>👥</span><span>球友名冊</span>
+          <span id="nav-attending-count" class="px-1.5 py-0.5 text-[11px] rounded-full bg-emerald-100 text-emerald-800">0</span>
         </button>
         <button onclick="switchTab('fees')" id="tab-btn-fees"
           class="px-2 py-2.5 rounded-xl text-xs sm:text-sm font-extrabold transition-all flex flex-col sm:flex-row items-center justify-center gap-1 text-slate-600 hover:text-slate-900">
           <span>💰</span><span>臨打記帳</span>
           <span id="nav-unpaid-count" class="px-1.5 py-0.5 text-[11px] rounded-full bg-rose-100 text-rose-700">0</span>
         </button>
-        <button onclick="switchTab('roster')" id="tab-btn-roster"
+        <button onclick="switchTab('history')" id="tab-btn-history"
           class="px-2 py-2.5 rounded-xl text-xs sm:text-sm font-extrabold transition-all flex flex-col sm:flex-row items-center justify-center gap-1 text-slate-600 hover:text-slate-900">
-          <span>👥</span><span>球友名冊</span>
-          <span id="nav-attending-count" class="px-1.5 py-0.5 text-[11px] rounded-full bg-emerald-100 text-emerald-800">0</span>
+          <span>📜</span><span>場次紀錄</span>
+          <span id="nav-history-count" class="px-1.5 py-0.5 text-[11px] rounded-full bg-slate-200 text-slate-700">0</span>
         </button>
         <button onclick="switchTab('sim')" id="tab-btn-sim"
           class="px-2 py-2.5 rounded-xl text-xs sm:text-sm font-extrabold transition-all flex flex-col sm:flex-row items-center justify-center gap-1 text-indigo-700 hover:text-indigo-900">
@@ -135,21 +128,21 @@
   <main class="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 py-4 sm:py-6 pb-24">
 
     <!-- ========================================================== -->
-    <!-- TAB 1: 🏸 場上排點                                          -->
+    <!-- TAB 1: 🏸 現場排點                                          -->
     <!-- ========================================================== -->
-    <section id="view-main" class="space-y-6">
+    <section id="view-main" class="space-y-5">
 
-      <!-- 空白引導橫幅 -->
+      <!-- 空白引導橫幅（名冊完全為空時顯示） -->
       <div id="empty-session-banner" class="hidden bg-white rounded-3xl border-2 border-dashed border-emerald-300 p-8 sm:p-10 text-center shadow-sm">
         <div class="text-5xl mb-3">🏸</div>
-        <h2 class="text-xl sm:text-2xl font-extrabold text-slate-900 mb-2">尚無今日出席球友</h2>
-        <p class="text-slate-500 text-sm max-w-md mx-auto mb-6">
-          點擊下方按鈕一鍵建立 15 位範例球友（8 男 7 女，涵蓋 5–10 級），立即體驗 4女優先／4男優先／2男2女對稱混雙排點！
+        <h2 class="text-xl sm:text-2xl font-extrabold text-slate-900 mb-2">開始今日羽球排點</h2>
+        <p class="text-slate-500 text-sm max-w-lg mx-auto mb-6 leading-relaxed">
+          前 2 場支援<strong>手動挑選已到場球友開場</strong>，並可隨時點選<strong>遲到球友快速報到</strong>；第 3 場起自動切換為智慧公平運算排點！
         </p>
         <div class="flex flex-wrap items-center justify-center gap-3">
           <button onclick="importSample15Players()"
             class="px-6 py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-base shadow-md active:scale-95 transition-all">
-            ⚡ 一鍵建立 15 位範例球友
+            ⚡ 一鍵建立 15 位範例球友（12 到場 + 3 遲到）
           </button>
           <button onclick="switchTab('roster')"
             class="px-6 py-3.5 rounded-2xl bg-slate-800 hover:bg-slate-900 text-white font-bold text-base shadow-md active:scale-95 transition-all">
@@ -169,75 +162,169 @@
             </span>
           </div>
           <p class="text-xs sm:text-sm text-slate-500 font-medium">
-            不分場號，打完直接按卡片下方「✅ 一鍵下場（4人結束）」
+            打完直接按卡片下方「✅ 一鍵下場（4人結束）」
           </p>
         </div>
 
         <div id="active-matches-grid" class="grid grid-cols-1 lg:grid-cols-2 gap-4"></div>
       </div>
 
-      <!-- 區塊二：下一組預備 & 再下一組預備 -->
-      <div id="queue-section" class="grid grid-cols-1 lg:grid-cols-12 gap-4">
-        <!-- 左側：下一組預備 -->
-        <div class="lg:col-span-7 bg-white rounded-3xl border-2 border-blue-200 shadow-sm p-4 sm:p-5 flex flex-col justify-between">
-          <div>
-            <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
-              <div class="flex items-center gap-2">
-                <span class="px-2.5 py-1 rounded-xl bg-blue-600 text-white text-xs font-extrabold tracking-wide">NEXT</span>
-                <h2 class="text-lg sm:text-xl font-extrabold text-slate-900">下一組預備（4人）</h2>
-                <span id="next-match-type-badge" class="hidden px-2.5 py-0.5 rounded-lg text-xs font-extrabold"></span>
-              </div>
-              <div class="flex items-center gap-2">
-                <span id="next-match-balance-badge" class="text-xs font-bold px-2.5 py-1 rounded-lg bg-slate-100 text-slate-600">
-                  等待湊滿 4 人
-                </span>
-                <button onclick="handleReshuffleNext()" title="重新配對"
-                  class="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs sm:text-sm font-bold border border-slate-200 active:scale-95 transition-all">
-                  🔀 重新配對
-                </button>
-              </div>
+      <!-- 區塊二 A：✋ 手動開場排點模式（第 1、2 場 或 臨時手動覆寫） -->
+      <div id="manual-mode-section" class="hidden bg-white rounded-3xl border-2 border-amber-400 shadow-md overflow-hidden">
+        <div class="bg-amber-50 border-b border-amber-200 px-4 sm:px-6 py-4 flex flex-wrap items-center justify-between gap-3">
+          <div class="flex items-center gap-2.5">
+            <span class="px-3 py-1 rounded-xl bg-amber-500 text-white text-xs font-black tracking-wide shadow-sm">✋ 手動模式</span>
+            <div>
+              <h2 id="manual-mode-title" class="text-lg sm:text-xl font-black text-slate-900 leading-tight">
+                手動開場排點（第 1 場）
+              </h2>
+              <p id="manual-mode-subtitle" class="text-xs text-amber-900/80 font-semibold mt-0.5">
+                前 2 場由球主手動挑選已到場球友上場，第 3 場起自動切換為智慧運算排點
+              </p>
             </div>
-
-            <div id="next-match-content" class="mb-4"></div>
           </div>
 
-          <div class="pt-3 border-t border-slate-100 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-            <p class="text-xs text-slate-500">
-              規則：<strong>4女優先 → 4男優先 → 2男2女對稱</strong>｜點擊兩人可互換位置
-            </p>
-            <button id="btn-start-next-match" onclick="handleStartNextMatch()" disabled
-              class="px-6 py-3.5 rounded-2xl font-extrabold text-base sm:text-lg shadow-md transition-all active:scale-95
-                     bg-emerald-600 hover:bg-emerald-700 text-white
-                     disabled:bg-slate-200 disabled:text-slate-400 disabled:shadow-none disabled:cursor-not-allowed">
-              ▶ 安排上場
+          <div class="flex flex-wrap items-center gap-2">
+            <button id="btn-switch-back-auto" onclick="toggleManualOverride(false)"
+              class="hidden px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs sm:text-sm shadow-sm active:scale-95 transition-all">
+              🤖 切回自動運算
+            </button>
+            <button onclick="handleAutoSplitManual()"
+              class="px-3.5 py-2 rounded-xl bg-white hover:bg-amber-100 text-amber-950 border-2 border-amber-300 font-extrabold text-xs sm:text-sm active:scale-95 transition-all">
+              ⚖️ 自動分隊（依級別平衡）
+            </button>
+            <button onclick="handleClearManualSlots()"
+              class="px-3.5 py-2 rounded-xl bg-white hover:bg-rose-50 text-rose-700 border border-rose-200 font-bold text-xs sm:text-sm active:scale-95 transition-all">
+              🗑️ 清空已選
             </button>
           </div>
         </div>
 
-        <!-- 右側：再下一組預備 -->
-        <div class="lg:col-span-5 bg-white rounded-3xl border border-slate-200 shadow-sm p-4 sm:p-5 flex flex-col">
-          <div class="flex items-center justify-between gap-2 mb-3">
-            <div class="flex items-center gap-2">
-              <span class="px-2.5 py-1 rounded-xl bg-slate-200 text-slate-700 text-xs font-extrabold">PRE-QUEUE</span>
-              <h2 class="text-base sm:text-lg font-extrabold text-slate-800">再下一組預備</h2>
+        <div class="p-4 sm:p-6 space-y-5">
+          <!-- 4 個大槽位：隊伍 A（左 2 位）VS 隊伍 B（右 2 位） -->
+          <div id="manual-slots-container"></div>
+
+          <!-- 確認手動上場大按鈕 -->
+          <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-2 border-t border-slate-100">
+            <div id="manual-selection-status" class="text-xs sm:text-sm font-bold text-slate-600">
+              已選 0 / 4 位（點擊下方已到場球友加入槽位，點擊槽位可移除）
             </div>
-            <span id="second-queue-count" class="text-xs font-bold text-slate-500">0 / 4 人</span>
+            <button id="btn-start-manual-match" onclick="handleStartManualMatch()" disabled
+              class="px-6 py-3.5 rounded-2xl font-extrabold text-base sm:text-lg shadow-md transition-all active:scale-95
+                     bg-emerald-600 hover:bg-emerald-700 text-white
+                     disabled:bg-slate-200 disabled:text-slate-400 disabled:shadow-none disabled:cursor-not-allowed">
+              🚀 確認手動上場（第 1 場）
+            </button>
           </div>
-          <p class="text-xs text-slate-500 mb-3">
-            15 人開兩面場時，此區先顯示 3 位等待者 + 1 個空缺，待場上一鍵下場後自動補位。
-          </p>
-          <div id="second-queue-grid" class="grid grid-cols-2 gap-2.5 flex-1"></div>
+
+          <!-- 下方：已到場且在場下等待的球友點選池 -->
+          <div class="pt-3 border-t border-slate-200">
+            <div class="flex items-center justify-between gap-2 mb-3">
+              <h3 class="text-sm sm:text-base font-extrabold text-slate-800">
+                👇 點擊下方已到場球友加入上場名單
+              </h3>
+              <span id="manual-available-count" class="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-xs font-extrabold">
+                可選 0 人
+              </span>
+            </div>
+            <div id="manual-waiting-picker" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2.5"></div>
+          </div>
         </div>
       </div>
 
-      <!-- 區塊三：場下等待與休息區 -->
+      <!-- 區塊二 B：🤖 自動運算排點模式（第 3 場起） -->
+      <div id="auto-mode-section" class="hidden space-y-3">
+        <!-- 自動模式狀態橫條 -->
+        <div class="bg-blue-50 border border-blue-200 rounded-2xl px-4 py-2.5 flex flex-wrap items-center justify-between gap-2">
+          <div class="flex items-center gap-2">
+            <span class="px-2.5 py-1 rounded-xl bg-blue-600 text-white text-xs font-black">🤖 第 3 場起：自動運算排點中</span>
+            <span class="text-xs font-semibold text-blue-900 hidden sm:inline">
+              規則：公平上場數 → 4女優先 → 4男優先 → 2男2女對稱混雙 + 級別接近
+            </span>
+          </div>
+          <button onclick="toggleManualOverride(true)"
+            class="px-3 py-1.5 rounded-xl bg-white hover:bg-amber-50 text-amber-900 border border-amber-300 font-extrabold text-xs active:scale-95 transition-all">
+            ✋ 臨時改手動
+          </button>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+          <!-- 左側：下一組上場（4人） -->
+          <div class="lg:col-span-7 bg-white rounded-3xl border-2 border-blue-200 shadow-sm p-4 sm:p-5 flex flex-col justify-between">
+            <div>
+              <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+                <div class="flex items-center gap-2">
+                  <span class="px-2.5 py-1 rounded-xl bg-blue-600 text-white text-xs font-extrabold tracking-wide">NEXT</span>
+                  <h2 class="text-lg sm:text-xl font-extrabold text-slate-900">下一組上場（4人）</h2>
+                  <span id="next-match-type-badge" class="hidden px-2.5 py-0.5 rounded-lg text-xs font-extrabold"></span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span id="next-match-balance-badge" class="text-xs font-bold px-2.5 py-1 rounded-lg bg-slate-100 text-slate-600">
+                    等待湊滿 4 人
+                  </span>
+                  <button onclick="handleReshuffleNext()" title="重新運算"
+                    class="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs sm:text-sm font-bold border border-slate-200 active:scale-95 transition-all">
+                    🔄 重新運算
+                  </button>
+                </div>
+              </div>
+
+              <div id="next-match-content" class="mb-4"></div>
+            </div>
+
+            <div class="pt-3 border-t border-slate-100 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+              <p class="text-xs text-slate-500">
+                點擊任兩位場下或預備球友即可<strong>互換位置</strong>
+              </p>
+              <button id="btn-start-next-match" onclick="handleStartNextMatch()" disabled
+                class="px-6 py-3.5 rounded-2xl font-extrabold text-base sm:text-lg shadow-md transition-all active:scale-95
+                       bg-emerald-600 hover:bg-emerald-700 text-white
+                       disabled:bg-slate-200 disabled:text-slate-400 disabled:shadow-none disabled:cursor-not-allowed">
+                🚀 確認上場
+              </button>
+            </div>
+          </div>
+
+          <!-- 右側：再下一組預備 -->
+          <div class="lg:col-span-5 bg-white rounded-3xl border border-slate-200 shadow-sm p-4 sm:p-5 flex flex-col">
+            <div class="flex items-center justify-between gap-2 mb-3">
+              <div class="flex items-center gap-2">
+                <span class="px-2.5 py-1 rounded-xl bg-slate-200 text-slate-700 text-xs font-extrabold">PRE-QUEUE</span>
+                <h2 class="text-base sm:text-lg font-extrabold text-slate-800">再下一組預備</h2>
+              </div>
+              <span id="second-queue-count" class="text-xs font-bold text-slate-500">0 / 4 人</span>
+            </div>
+            <p class="text-xs text-slate-500 mb-3">
+              15 人開兩面場時，此區先顯示 3 位等待者 + 1 個空缺，待場上一鍵下場後自動補位。
+            </p>
+            <div id="second-queue-grid" class="grid grid-cols-2 gap-2.5 flex-1"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 區塊三：🏃 遲到球友快速報到列（直接在現場排點主頁一鍵報到） -->
+      <div id="latecomer-checkin-bar" class="hidden bg-white rounded-3xl border-2 border-indigo-200 shadow-sm p-4 sm:p-5">
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+          <div class="flex items-center gap-2">
+            <span class="text-lg">🏃</span>
+            <h2 class="text-base sm:text-lg font-extrabold text-slate-900">遲到球友快速報到</h2>
+            <span id="latecomer-count-badge" class="px-2.5 py-0.5 rounded-full bg-indigo-100 text-indigo-800 text-xs font-extrabold">
+              尚未到場 0 人
+            </span>
+          </div>
+          <span class="text-xs text-slate-500 font-medium">點擊球友卡片即刻報到，馬上進入排隊池</span>
+        </div>
+        <div id="latecomer-list" class="flex flex-wrap gap-2"></div>
+      </div>
+
+      <!-- 區塊四：場下等待與暫休區 -->
       <div id="waiting-pool-section" class="bg-white rounded-3xl border border-slate-200 shadow-sm p-4 sm:p-5">
         <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
           <div class="flex items-center gap-2">
             <h2 class="text-base sm:text-lg font-extrabold text-slate-900">場下等待與暫休區</h2>
             <span id="waiting-pool-count" class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-slate-100 text-slate-700">0 人</span>
           </div>
-          <span class="text-xs text-slate-500">點擊卡片可<strong>互換位置</strong>，點擊右側按鈕可切換<strong>暫休／回歸</strong></span>
+          <span id="waiting-pool-hint" class="text-xs text-slate-500">點擊右側按鈕可切換<strong>暫休／回歸</strong></span>
         </div>
         <div id="waiting-pool-list" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5"></div>
       </div>
@@ -245,41 +332,81 @@
     </section>
 
     <!-- ========================================================== -->
-    <!-- TAB 2: 📜 場次紀錄                                          -->
+    <!-- TAB 2: 👥 球友名冊                                          -->
     <!-- ========================================================== -->
-    <section id="view-history" class="hidden space-y-6">
-      <!-- 頂部操作列 + 清除場次紀錄按鈕 -->
+    <section id="view-roster" class="hidden space-y-6">
       <div class="bg-white rounded-3xl border border-slate-200 shadow-sm p-4 sm:p-5 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 class="text-lg sm:text-xl font-extrabold text-slate-900">場次紀錄與今日統計</h2>
+          <h2 class="text-lg sm:text-xl font-extrabold text-slate-900">球友總名冊與今日到場</h2>
           <p class="text-xs sm:text-sm text-slate-500 mt-0.5">
-            自動統計男雙／女雙／混雙次數、雙方級數總和與個人上場次數。
+            支援 5–10 級高對比色標，未勾選今日到場的球友會自動出現在主頁「🏃 遲到球友快速報到」列。
           </p>
         </div>
-        <button onclick="confirmClearHistory()"
-          class="px-5 py-3 rounded-2xl bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-sm shadow-md active:scale-95 transition-all">
-          🗑️ 清除場次紀錄
-        </button>
-      </div>
-
-      <!-- 對戰類型統計小卡 -->
-      <div id="history-type-summary" class="grid grid-cols-2 sm:grid-cols-4 gap-3"></div>
-
-      <!-- 今日個人上場次數統計 -->
-      <div class="bg-white rounded-3xl border border-slate-200 shadow-sm p-4 sm:p-5">
-        <div class="flex items-center justify-between gap-2 mb-4">
-          <h3 class="text-base sm:text-lg font-extrabold text-slate-900">今日球友上場次數統計</h3>
-          <span id="stats-total-matches" class="px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-extrabold">
-            累計完成 0 場
-          </span>
+        <div class="flex flex-wrap items-center gap-2">
+          <button onclick="openPlayerModal()"
+            class="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm shadow-sm active:scale-95 transition-all">
+            ＋ 新增球友
+          </button>
+          <button onclick="importSample15Players()"
+            class="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm shadow-sm active:scale-95 transition-all">
+            ⚡ 一鍵建立 15 位範例球友
+          </button>
+          <button onclick="toggleSelectAllAttendance(true)"
+            class="px-3.5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm active:scale-95 transition-all">
+            ✅ 全部設為已到場
+          </button>
         </div>
-        <div id="player-stats-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2.5"></div>
       </div>
 
-      <!-- 歷史場次列表 -->
+      <!-- 5-10 級色標圖例 -->
+      <div class="bg-white rounded-2xl border border-slate-200 px-4 py-3 flex flex-wrap items-center gap-2 text-xs font-bold">
+        <span class="text-slate-500 mr-1">級別色標：</span>
+        <span class="px-2.5 py-1 rounded-lg border bg-emerald-100 text-emerald-900 border-emerald-400">Lv.5 翡翠綠</span>
+        <span class="px-2.5 py-1 rounded-lg border bg-sky-100 text-sky-900 border-sky-400">Lv.6 亮藍</span>
+        <span class="px-2.5 py-1 rounded-lg border bg-amber-100 text-amber-950 border-amber-400">Lv.7 琥珀橘</span>
+        <span class="px-2.5 py-1 rounded-lg border bg-rose-100 text-rose-900 border-rose-400">Lv.8 玫紅</span>
+        <span class="px-2.5 py-1 rounded-lg border bg-purple-100 text-purple-950 border-purple-400">Lv.9 深紫</span>
+        <span class="px-2.5 py-1 rounded-lg border bg-slate-900 text-amber-300 border-amber-500">Lv.10 黑底金字</span>
+      </div>
+
+      <!-- 搜尋與名冊列表 -->
       <div class="bg-white rounded-3xl border border-slate-200 shadow-sm p-4 sm:p-5">
-        <h3 class="text-base sm:text-lg font-extrabold text-slate-900 mb-4">已完成場次明細</h3>
-        <div id="match-history-list" class="space-y-3"></div>
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+          <div class="relative flex-1 min-w-[200px] max-w-md">
+            <input id="roster-search" type="text" oninput="renderRosterView()" placeholder="搜尋球友姓名..."
+              class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+            <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400">🔍</span>
+          </div>
+          <div class="text-sm font-bold text-slate-700">
+            今日已到場：<span id="roster-checked-count" class="text-emerald-600 text-base">0</span> / <span id="roster-total-count">0</span> 人
+          </div>
+        </div>
+        <div id="roster-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3"></div>
+      </div>
+
+      <!-- 資料備份與手動清除區 -->
+      <div class="bg-white rounded-3xl border border-slate-200 shadow-sm p-4 sm:p-5">
+        <h3 class="text-base font-extrabold text-slate-800 mb-3">資料備份與手動清除</h3>
+        <div class="flex flex-wrap items-center gap-3">
+          <button onclick="exportBackupJSON()"
+            class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-900 text-white font-bold text-sm active:scale-95 transition-all">
+            ⬇ 匯出備份 (JSON)
+          </button>
+          <label class="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300 font-bold text-sm cursor-pointer active:scale-95 transition-all">
+            ⬆ 匯入還原 (JSON)
+            <input type="file" accept=".json" onchange="importBackupJSON(event)" class="hidden" />
+          </label>
+          <div class="flex flex-wrap items-center gap-2 sm:ml-auto">
+            <button onclick="confirmResetToday()"
+              class="px-4 py-2.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 font-bold text-sm active:scale-95 transition-all">
+              🔄 重設今日場次（保留球友名冊）
+            </button>
+            <button onclick="confirmClearAllData()"
+              class="px-4 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-sm shadow-sm active:scale-95 transition-all">
+              🗑️ 完全清空所有資料（含名冊）
+            </button>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -287,7 +414,6 @@
     <!-- TAB 3: 💰 臨打記帳                                          -->
     <!-- ========================================================== -->
     <section id="view-fees" class="hidden space-y-6">
-      <!-- 頂部設定與重設 -->
       <div class="bg-white rounded-3xl border border-slate-200 shadow-sm p-4 sm:p-5 flex flex-wrap items-center justify-between gap-4">
         <div>
           <h2 class="text-lg sm:text-xl font-extrabold text-slate-900">💰 臨打費用記帳</h2>
@@ -340,87 +466,43 @@
 
       <!-- 今日出席收費清單 -->
       <div class="bg-white rounded-3xl border border-slate-200 shadow-sm p-4 sm:p-5">
-        <h3 class="text-base sm:text-lg font-extrabold text-slate-900 mb-4">今日出席收費名單</h3>
+        <h3 class="text-base sm:text-lg font-extrabold text-slate-900 mb-4">今日到場收費名單</h3>
         <div id="fee-list-grid" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
       </div>
     </section>
 
     <!-- ========================================================== -->
-    <!-- TAB 4: 👥 球友名冊                                          -->
+    <!-- TAB 4: 📜 場次紀錄                                          -->
     <!-- ========================================================== -->
-    <section id="view-roster" class="hidden space-y-6">
+    <section id="view-history" class="hidden space-y-6">
       <div class="bg-white rounded-3xl border border-slate-200 shadow-sm p-4 sm:p-5 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 class="text-lg sm:text-xl font-extrabold text-slate-900">球友總名冊與今日出席</h2>
+          <h2 class="text-lg sm:text-xl font-extrabold text-slate-900">場次紀錄與今日統計</h2>
           <p class="text-xs sm:text-sm text-slate-500 mt-0.5">
-            支援 5–10 級高對比色標，勾選今日出席即可自動進入排點佇列。
+            標示每場為「✋ 手動」或「🤖 自動」排點，並統計男雙／女雙／混雙與個人上場次數。
           </p>
         </div>
-        <div class="flex flex-wrap items-center gap-2">
-          <button onclick="openPlayerModal()"
-            class="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm shadow-sm active:scale-95 transition-all">
-            ＋ 新增球友
-          </button>
-          <button onclick="importSample15Players()"
-            class="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm shadow-sm active:scale-95 transition-all">
-            ⚡ 一鍵建立 15 位範例球友
-          </button>
-          <button onclick="toggleSelectAllAttendance(true)"
-            class="px-3.5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm active:scale-95 transition-all">
-            全選出席
-          </button>
-        </div>
+        <button onclick="confirmClearHistory()"
+          class="px-5 py-3 rounded-2xl bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-sm shadow-md active:scale-95 transition-all">
+          🗑️ 清除場次紀錄
+        </button>
       </div>
 
-      <!-- 5-10 級色標圖例 -->
-      <div class="bg-white rounded-2xl border border-slate-200 px-4 py-3 flex flex-wrap items-center gap-2 text-xs font-bold">
-        <span class="text-slate-500 mr-1">級別色標：</span>
-        <span class="px-2.5 py-1 rounded-lg border bg-emerald-100 text-emerald-900 border-emerald-400">Lv.5 翡翠綠</span>
-        <span class="px-2.5 py-1 rounded-lg border bg-sky-100 text-sky-900 border-sky-400">Lv.6 亮藍</span>
-        <span class="px-2.5 py-1 rounded-lg border bg-amber-100 text-amber-950 border-amber-400">Lv.7 琥珀橘</span>
-        <span class="px-2.5 py-1 rounded-lg border bg-rose-100 text-rose-900 border-rose-400">Lv.8 玫紅</span>
-        <span class="px-2.5 py-1 rounded-lg border bg-purple-100 text-purple-950 border-purple-400">Lv.9 深紫</span>
-        <span class="px-2.5 py-1 rounded-lg border bg-slate-900 text-amber-300 border-amber-500">Lv.10 黑底金字</span>
-      </div>
+      <div id="history-type-summary" class="grid grid-cols-2 sm:grid-cols-4 gap-3"></div>
 
-      <!-- 搜尋與名冊列表 -->
       <div class="bg-white rounded-3xl border border-slate-200 shadow-sm p-4 sm:p-5">
-        <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
-          <div class="relative flex-1 min-w-[200px] max-w-md">
-            <input id="roster-search" type="text" oninput="renderRosterView()" placeholder="搜尋球友姓名..."
-              class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" />
-            <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400">🔍</span>
-          </div>
-          <div class="text-sm font-bold text-slate-700">
-            今日出席：<span id="roster-checked-count" class="text-emerald-600 text-base">0</span> / <span id="roster-total-count">0</span> 人
-          </div>
+        <div class="flex items-center justify-between gap-2 mb-4">
+          <h3 class="text-base sm:text-lg font-extrabold text-slate-900">今日球友上場次數排行</h3>
+          <span id="stats-total-matches" class="px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-extrabold">
+            累計完成 0 場
+          </span>
         </div>
-        <div id="roster-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3"></div>
+        <div id="player-stats-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2.5"></div>
       </div>
 
-      <!-- 資料備份與手動清除區 -->
       <div class="bg-white rounded-3xl border border-slate-200 shadow-sm p-4 sm:p-5">
-        <h3 class="text-base font-extrabold text-slate-800 mb-3">資料備份與手動清除</h3>
-        <div class="flex flex-wrap items-center gap-3">
-          <button onclick="exportBackupJSON()"
-            class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-900 text-white font-bold text-sm active:scale-95 transition-all">
-            ⬇ 匯出備份 (JSON)
-          </button>
-          <label class="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300 font-bold text-sm cursor-pointer active:scale-95 transition-all">
-            ⬆ 匯入還原 (JSON)
-            <input type="file" accept=".json" onchange="importBackupJSON(event)" class="hidden" />
-          </label>
-          <div class="flex flex-wrap items-center gap-2 sm:ml-auto">
-            <button onclick="confirmResetToday()"
-              class="px-4 py-2.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 font-bold text-sm active:scale-95 transition-all">
-              🔄 重設今日場次（保留名冊）
-            </button>
-            <button onclick="confirmClearAllData()"
-              class="px-4 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-sm shadow-sm active:scale-95 transition-all">
-              🗑️ 完全清空所有資料（含名冊）
-            </button>
-          </div>
-        </div>
+        <h3 class="text-base sm:text-lg font-extrabold text-slate-900 mb-4">已完成場次明細</h3>
+        <div id="match-history-list" class="space-y-3"></div>
       </div>
     </section>
 
@@ -435,27 +517,26 @@
           </div>
           <h2 class="text-xl sm:text-2xl font-black tracking-tight">2 面場輪轉模擬跑 10 場</h2>
           <p class="text-indigo-100 text-xs sm:text-sm mt-1">
-            依照「公平上場次數 → 4女優先 → 4男優先 → 2男2女對稱混雙 + 級別接近」演算法即時驗證配對與層級同場分佈。
+            驗證第 3 場起自動演算規則：公平場次 → 4女優先 → 4男優先 → 2男2女對稱混雙 + 級別接近。
           </p>
         </div>
         <div class="flex flex-wrap items-center gap-2.5 shrink-0">
           <button onclick="runSimulation10Matches(false)"
             class="px-5 py-3.5 rounded-2xl bg-white text-indigo-800 hover:bg-indigo-50 font-extrabold text-sm sm:text-base shadow-lg active:scale-95 transition-all">
-            ▶ 開始模擬跑 10 場
+            ▶ 用目前出席名單模擬 10 場
           </button>
           <button onclick="runSimulation10Matches(true)"
             class="px-4 py-3.5 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-white font-extrabold text-xs sm:text-sm shadow-md active:scale-95 transition-all">
-            ⚡ 用 15 位範例球友跑 10 場
+            ⚡ 用 15 位範例球友模擬 10 場
           </button>
         </div>
       </div>
 
-      <!-- 模擬結果容器 -->
       <div id="sim-results-container" class="space-y-6">
         <div class="bg-white rounded-3xl border-2 border-dashed border-indigo-200 p-10 text-center">
           <div class="text-4xl mb-2">🧪</div>
-          <p class="text-slate-700 font-extrabold text-base">點擊上方「▶ 開始模擬跑 10 場」立即產出完整統計報表</p>
-          <p class="text-slate-400 text-xs mt-1">若尚未建立出席球友，系統會自動提供 15 位範例球友（8男7女，5–10級）進行沙盒測試</p>
+          <p class="text-slate-700 font-extrabold text-base">點擊上方按鈕立即產出 10 場沙盒統計報表</p>
+          <p class="text-slate-400 text-xs mt-1">包含男雙／女雙／混雙次數、平均級數差、每人上場次數與層級同場分佈</p>
         </div>
       </div>
     </section>
@@ -472,14 +553,12 @@
       <form onsubmit="handleSavePlayer(event)" class="p-6 space-y-4">
         <input type="hidden" id="edit-player-id" />
 
-        <!-- 姓名 -->
         <div>
           <label class="block text-sm font-bold text-slate-700 mb-1.5">球友姓名</label>
           <input id="input-player-name" type="text" required maxlength="20" placeholder="例如：阿明"
             class="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-base font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500" />
         </div>
 
-        <!-- 性別 -->
         <div>
           <label class="block text-sm font-bold text-slate-700 mb-1.5">性別</label>
           <div class="grid grid-cols-2 gap-3">
@@ -500,16 +579,12 @@
           </div>
         </div>
 
-        <!-- 羽球層級 5–10（6 個高對比大按鈕） -->
         <div>
           <label class="block text-sm font-bold text-slate-700 mb-2">羽球層級（5–10 級）</label>
           <input type="hidden" id="input-player-level" value="7" />
-          <div id="modal-level-buttons" class="grid grid-cols-3 gap-2">
-            <!-- 動態產生 5-10 級按鈕 -->
-          </div>
+          <div id="modal-level-buttons" class="grid grid-cols-3 gap-2"></div>
         </div>
 
-        <!-- 個人臨打費用 -->
         <div>
           <label class="block text-sm font-bold text-slate-700 mb-1.5">臨打費用（$）</label>
           <input id="input-player-fee" type="number" min="0" step="10" value="200"
@@ -517,11 +592,10 @@
           <p class="text-[11px] text-slate-400 mt-1">季繳或免收球友可設為 0</p>
         </div>
 
-        <!-- 新增時自動加入今日出席 -->
         <div id="modal-checkin-row" class="pt-1">
           <label class="flex items-center gap-2.5 cursor-pointer select-none">
             <input id="input-player-checkin" type="checkbox" checked class="w-5 h-5 accent-emerald-600 rounded" />
-            <span class="text-sm font-bold text-slate-700">立即加入「今日出席」參與排點與記帳</span>
+            <span class="text-sm font-bold text-slate-700">立即標記為「今日已到場」參與排點</span>
           </label>
         </div>
 
@@ -564,7 +638,6 @@
     const STORAGE_KEY = 'badminton_queue_v5';
     const ALLOWED_LEVELS = [5, 6, 7, 8, 9, 10];
 
-    // 系統完整狀態
     let state = createInitialState();
     let activeTab = 'main';
     let swapSourceId = null;
@@ -574,35 +647,38 @@
     function createInitialState() {
       return {
         defaultFee: 200,
-        roster: [],          // [{ id, name, level(5-10), gender('M'|'F'), fee(number) }]
-        attendance: {},      // { [id]: { gamesPlayed: 0, lastOffTime: 0, paused: false, joinedAt: 0, paid: false, fee: 200 } }
-        activeMatches: [],   // [{ id, seq, startTime, teamA: [id, id], teamB: [id, id] }]
-        nextMatch: null,     // { teamA: [id, id], teamB: [id, id] } | null
-        secondQueue: [],     // [id, ...] up to 4
-        history: [],         // [{ id, seq, startTime, endTime, matchType, teamA: [snap], teamB: [snap] }]
+        roster: [],            // [{ id, name, level(5-10), gender('M'|'F'), fee(number) }]
+        attendance: {},        // { [id]: { gamesPlayed: 0, lastOffTime: 0, paused: false, joinedAt: 0, paid: false, fee: 200 } }
+        activeMatches: [],     // [{ id, seq, startTime, isManual: bool, teamA: [id, id], teamB: [id, id] }]
+        manualSlots: [null, null, null, null], // [A1, A2, B1, B2]
+        manualModeOverride: false,             // 第 3 場起是否臨時切換回手動模式
+        nextMatch: null,       // { teamA: [id, id], teamB: [id, id] } | null
+        secondQueue: [],       // [id, ...] up to 4
+        history: [],           // [{ id, seq, startTime, endTime, isManual: bool, matchType, teamA: [snap], teamB: [snap] }]
         matchCounter: 1,
-        undoStack: []        // array of JSON strings (max 30)
+        undoStack: []          // array of JSON strings (max 30)
       };
     }
 
-    // 15 位範例球友資料（8 男 7 女，涵蓋 5–10 級）
+    // 15 位範例球友（8 男 7 女，涵蓋 5–10 級；預設前 12 位已到場、後 3 位尚未到場方便測試遲到報到）
     function getSample15Template() {
       return [
-        { name: '小美', level: 6,  gender: 'F' },
-        { name: '怡君', level: 5,  gender: 'F' },
-        { name: '佳穎', level: 7,  gender: 'F' },
-        { name: '雅婷', level: 6,  gender: 'F' },
-        { name: '佩珊', level: 8,  gender: 'F' },
-        { name: '思妤', level: 5,  gender: 'F' },
-        { name: '詩涵', level: 9,  gender: 'F' },
-        { name: '阿明', level: 8,  gender: 'M' },
-        { name: '大衛', level: 10, gender: 'M' },
-        { name: '冠宇', level: 7,  gender: 'M' },
-        { name: '志豪', level: 9,  gender: 'M' },
-        { name: '柏翰', level: 8,  gender: 'M' },
-        { name: '宗翰', level: 10, gender: 'M' },
-        { name: '俊傑', level: 6,  gender: 'M' },
-        { name: '家豪', level: 7,  gender: 'M' }
+        { name: '小美', level: 6,  gender: 'F', arrived: true },
+        { name: '怡君', level: 5,  gender: 'F', arrived: true },
+        { name: '佳穎', level: 7,  gender: 'F', arrived: true },
+        { name: '雅婷', level: 6,  gender: 'F', arrived: true },
+        { name: '佩珊', level: 8,  gender: 'F', arrived: true },
+        { name: '阿明', level: 8,  gender: 'M', arrived: true },
+        { name: '大衛', level: 10, gender: 'M', arrived: true },
+        { name: '冠宇', level: 7,  gender: 'M', arrived: true },
+        { name: '志豪', level: 9,  gender: 'M', arrived: true },
+        { name: '柏翰', level: 8,  gender: 'M', arrived: true },
+        { name: '俊傑', level: 6,  gender: 'M', arrived: true },
+        { name: '家豪', level: 7,  gender: 'M', arrived: true },
+        // 預設 3 位遲到球友（未到場，顯示於主頁快速報到列）
+        { name: '思妤', level: 5,  gender: 'F', arrived: false },
+        { name: '詩涵', level: 9,  gender: 'F', arrived: false },
+        { name: '宗翰', level: 10, gender: 'M', arrived: false }
       ];
     }
 
@@ -623,12 +699,14 @@
         const parsed = JSON.parse(raw);
         if (parsed && typeof parsed === 'object') {
           state = { ...createInitialState(), ...parsed };
-          // 確保舊資料欄位完整與級別落在 5–10
           state.roster = (state.roster || []).map(p => ({
             ...p,
             level: clampLevel(p.level),
             fee: typeof p.fee === 'number' ? p.fee : state.defaultFee
           }));
+          if (!Array.isArray(state.manualSlots) || state.manualSlots.length !== 4) {
+            state.manualSlots = [null, null, null, null];
+          }
           Object.keys(state.attendance || {}).forEach(pid => {
             const p = state.roster.find(x => x.id === pid);
             const att = state.attendance[pid];
@@ -676,6 +754,8 @@
         roster: state.roster,
         attendance: state.attendance,
         activeMatches: state.activeMatches,
+        manualSlots: state.manualSlots,
+        manualModeOverride: state.manualModeOverride,
         nextMatch: state.nextMatch,
         secondQueue: state.secondQueue,
         history: state.history,
@@ -697,6 +777,10 @@
         state.roster = snap.roster || [];
         state.attendance = snap.attendance || {};
         state.activeMatches = snap.activeMatches || [];
+        state.manualSlots = Array.isArray(snap.manualSlots) && snap.manualSlots.length === 4
+          ? snap.manualSlots
+          : [null, null, null, null];
+        state.manualModeOverride = Boolean(snap.manualModeOverride);
         state.nextMatch = snap.nextMatch || null;
         state.secondQueue = snap.secondQueue || [];
         state.history = snap.history || [];
@@ -709,8 +793,16 @@
     }
 
     // =========================================================================
-    // 3. 5–10 級高對比色標與輔助函式
+    // 3. 輔助函式與高對比色標（5–10 級）
     // =========================================================================
+    function getStartedMatchesCount() {
+      return (state.history || []).length + (state.activeMatches || []).length;
+    }
+
+    function isManualModeActive() {
+      return getStartedMatchesCount() < 2 || Boolean(state.manualModeOverride);
+    }
+
     function getPlayerById(id) {
       return state.roster.find(p => p.id === id) || null;
     }
@@ -759,6 +851,12 @@
       return `<span class="inline-flex items-center px-2.5 py-0.5 rounded-lg text-xs font-extrabold border ${styles[type] || styles['自由配']}">${type}</span>`;
     }
 
+    function getModeBadgeHTML(isManual) {
+      return isManual
+        ? `<span class="inline-flex items-center px-2 py-0.5 rounded-lg text-[11px] font-extrabold bg-amber-100 text-amber-900 border border-amber-300">✋ 手動</span>`
+        : `<span class="inline-flex items-center px-2 py-0.5 rounded-lg text-[11px] font-extrabold bg-blue-100 text-blue-800 border border-blue-300">🤖 自動</span>`;
+    }
+
     function formatTime(ts) {
       if (!ts) return '--:--';
       return new Date(ts).toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit', hour12: false });
@@ -774,7 +872,7 @@
     }
 
     // =========================================================================
-    // 4. 新排點演算法：公平池 + 4女優先 → 4男優先 → 2男2女對稱混雙 + 級別接近
+    // 4. 排點演算法（第 3 場起自動運算 + 沙盒模擬共用）
     // =========================================================================
     function getOnCourtIds() {
       const set = new Set();
@@ -815,7 +913,6 @@
 
       let combos = [];
       if (males.length === 2 && females.length === 2) {
-        // 強制 1男1女 vs 1男1女 對稱混雙
         combos = [
           { teamA: [males[0], females[0]], teamB: [males[1], females[1]] },
           { teamA: [males[0], females[1]], teamB: [males[1], females[0]] }
@@ -860,7 +957,6 @@
       };
     }
 
-    // 組合生成器：從陣列取 k 個
     function getCombinations(arr, k) {
       const res = [];
       function helper(start, path) {
@@ -878,16 +974,13 @@
       return res;
     }
 
-    // 核心演算法：挑選下一組 4 人（支援真實排點與沙盒模擬共用）
     function pickSmartFour(sortedEligible, randomize = false) {
       if (sortedEligible.length < 4) return null;
 
       const minGames = sortedEligible[0].gamesPlayed;
-      // 公平候選池：場次落差不超過 1 場
       let fairPool = sortedEligible.filter(p => p.gamesPlayed <= minGames + 1);
       if (fairPool.length < 4) fairPool = [...sortedEligible];
 
-      // 建立順序索引以評估等待優先權
       const rankMap = new Map();
       sortedEligible.forEach((p, idx) => rankMap.set(p.id, idx));
 
@@ -896,11 +989,11 @@
 
       let candidateGroups = [];
 
-      // 優先序 1：四位女生優先（女雙）
+      // 優先序 1：四位女生（女雙）
       if (females.length >= 4) {
         candidateGroups = getCombinations(females.slice(0, 10), 4);
       }
-      // 優先序 2：再來四位男生（男雙）
+      // 優先序 2：四位男生（男雙）
       else if (males.length >= 4) {
         candidateGroups = getCombinations(males.slice(0, 10), 4);
       }
@@ -914,7 +1007,7 @@
           }
         }
       }
-      // 備援：任意 4 人
+      // 備援：公平池內任意 4 人
       else {
         candidateGroups = getCombinations(fairPool.slice(0, 8), 4);
       }
@@ -923,7 +1016,6 @@
         return computeBest2v2Split(sortedEligible.slice(0, 4));
       }
 
-      // 評分每組 4 人：優先讓場次最少且等最久者上場，並盡量讓級別接近、雙方實力平衡
       let bestGroup = candidateGroups[0];
       let bestScore = Infinity;
 
@@ -934,7 +1026,6 @@
         const spread = Math.max(...levels) - Math.min(...levels);
         const split = computeBest2v2Split(group);
 
-        // 懲罰極端級距（例如 5 級與 10 級同場）
         const spreadPenalty = spread <= 2 ? spread * 2.5 : spread * 7.5;
         const splitPenalty = split.levelDiff * 9;
         const jitter = randomize ? Math.random() * 12 : 0;
@@ -949,11 +1040,23 @@
       return computeBest2v2Split(bestGroup);
     }
 
+    // 清理手動槽位中已失效（上場所、暫休、刪除、取消到場）的人員
+    function sanitizeManualSlots() {
+      const eligibleSet = new Set(getEligibleWaitingPlayers().map(p => p.id));
+      const seen = new Set();
+      state.manualSlots = (state.manualSlots || [null, null, null, null]).map(id => {
+        if (!id || !eligibleSet.has(id) || seen.has(id)) return null;
+        seen.add(id);
+        return id;
+      });
+    }
+
     function syncQueues(forceRecompute = false, randomize = false) {
+      sanitizeManualSlots();
+
       const eligible = getEligibleWaitingPlayers();
       const eligibleSet = new Set(eligible.map(p => p.id));
 
-      // 1. 檢查或建立 nextMatch
       let validNext = false;
       if (!forceRecompute && state.nextMatch) {
         const ids = [...state.nextMatch.teamA, ...state.nextMatch.teamB];
@@ -971,7 +1074,6 @@
         }
       }
 
-      // 2. 更新 secondQueue（排除 nextMatch 後剩餘人選，最多 4 人）
       const usedInNext = new Set(
         state.nextMatch ? [...state.nextMatch.teamA, ...state.nextMatch.teamB] : []
       );
@@ -986,18 +1088,135 @@
     }
 
     // =========================================================================
-    // 5. 核心場上操作：安排上場、一鍵下場（4人結束）、重新配對、互換、暫休
+    // 5. 手動開場排點（第 1、2 場）& 遲到球友快速報到 操作
     // =========================================================================
-    function handleStartNextMatch() {
-      if (!state.nextMatch) return;
-      cancelSwap();
-      pushUndo(`組別 #${state.matchCounter} 安排上場`);
+    function handlePickManualPlayer(playerId) {
+      if (state.manualSlots.includes(playerId)) return;
+      const openIdx = state.manualSlots.findIndex(s => s === null);
+      if (openIdx === -1) {
+        showToast('已選滿 4 位球友，點擊上方槽位可移除重選', 'warning');
+        return;
+      }
+      const p = getPlayerById(playerId);
+      pushUndo(`手動選入：${p?.name || '球友'}`);
+      state.manualSlots[openIdx] = playerId;
+      saveState();
+    }
 
+    function handleRemoveManualSlot(slotIdx) {
+      const pid = state.manualSlots[slotIdx];
+      if (!pid) return;
+      const p = getPlayerById(pid);
+      pushUndo(`移出槽位：${p?.name || '球友'}`);
+      state.manualSlots[slotIdx] = null;
+      saveState();
+    }
+
+    function handleClearManualSlots() {
+      if (state.manualSlots.every(s => s === null)) return;
+      pushUndo('清空手動已選球友');
+      state.manualSlots = [null, null, null, null];
+      saveState();
+      showToast('已清空手動已選槽位', 'info');
+    }
+
+    function handleAutoSplitManual() {
+      const ids = state.manualSlots.filter(Boolean);
+      if (ids.length < 4) {
+        showToast(`目前已選 ${ids.length} 人，請先選滿 4 位球友再進行自動分隊`, 'warning');
+        return;
+      }
+      const players4 = ids.map(getPlayerById).filter(Boolean);
+      if (players4.length !== 4) return;
+      pushUndo('手動排點自動分隊');
+      const split = computeBest2v2Split(players4);
+      state.manualSlots = [split.teamA[0], split.teamA[1], split.teamB[0], split.teamB[1]];
+      saveState();
+      showToast(`已完成平衡分隊（雙方級數差 ${split.levelDiff} 級）`, 'success');
+    }
+
+    function handleStartManualMatch() {
+      if (state.manualSlots.some(s => s === null)) {
+        showToast('請先選滿 4 位球友才能上場', 'warning');
+        return;
+      }
+      const [a1, a2, b1, b2] = state.manualSlots;
       const seq = state.matchCounter;
+      pushUndo(`手動安排第 ${seq} 場上場`);
+
       state.activeMatches.push({
         id: 'match_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
         seq,
         startTime: Date.now(),
+        isManual: true,
+        teamA: [a1, a2],
+        teamB: [b1, b2]
+      });
+      state.matchCounter += 1;
+      state.manualSlots = [null, null, null, null];
+
+      // 第 2 場一旦開打，自動切換為第 3 場起的自動運算模式
+      const totalStarted = getStartedMatchesCount();
+      if (totalStarted >= 2) {
+        state.manualModeOverride = false;
+      }
+
+      syncQueues(true);
+      saveState();
+
+      if (totalStarted === 2) {
+        showToast(`第 ${seq} 場已手動上場！第 3 場起已自動切換為「🤖 自動運算排點」`, 'success');
+      } else {
+        showToast(`第 ${seq} 場已手動安排上場！`, 'success');
+      }
+    }
+
+    function toggleManualOverride(enableManual) {
+      cancelSwap();
+      pushUndo(enableManual ? '臨時切換為手動排點' : '切回自動運算排點');
+      state.manualModeOverride = Boolean(enableManual);
+      if (enableManual) {
+        state.manualSlots = [null, null, null, null];
+      } else {
+        syncQueues(false);
+      }
+      saveState();
+      showToast(enableManual ? '已臨時切換為「✋ 手動排點模式」' : '已切回「🤖 自動運算排點模式」', 'info');
+    }
+
+    // 遲到球友快速報到（不離開主畫面，一鍵加入排隊）
+    function handleQuickLatecomerCheckin(playerId) {
+      const p = getPlayerById(playerId);
+      if (!p || state.attendance[playerId]) return;
+      const now = Date.now();
+      pushUndo(`遲到報到：${p.name}`);
+      state.attendance[playerId] = {
+        gamesPlayed: 0,
+        lastOffTime: now,
+        paused: false,
+        joinedAt: now,
+        paid: false,
+        fee: typeof p.fee === 'number' ? p.fee : state.defaultFee
+      };
+      syncQueues(false);
+      saveState();
+      showToast(`🏃 ${p.name} 已快速報到並加入場下排隊！`, 'success');
+    }
+
+    // =========================================================================
+    // 6. 自動模式上場、一鍵下場（4人結束）、重新運算、互換、暫休
+    // =========================================================================
+    function handleStartNextMatch() {
+      if (!state.nextMatch) return;
+      cancelSwap();
+      const seq = state.matchCounter;
+      pushUndo(`自動安排第 ${seq} 場上場`);
+
+      state.activeMatches.push({
+        id: 'match_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+        seq,
+        startTime: Date.now(),
+        isManual: false,
         teamA: [...state.nextMatch.teamA],
         teamB: [...state.nextMatch.teamB]
       });
@@ -1006,7 +1225,7 @@
 
       syncQueues(false);
       saveState();
-      showToast(`組別 #${seq} 已安排上場！`, 'success');
+      showToast(`第 ${seq} 場已安排上場！`, 'success');
     }
 
     function handleEndMatch(matchId) {
@@ -1015,7 +1234,7 @@
       const match = state.activeMatches[idx];
 
       cancelSwap();
-      pushUndo(`組別 #${match.seq} 一鍵下場`);
+      pushUndo(`第 ${match.seq} 場一鍵下場`);
 
       const now = Date.now();
       const mapTeam = (ids) => ids.map(pid => {
@@ -1037,6 +1256,7 @@
         seq: match.seq,
         startTime: match.startTime,
         endTime: now,
+        isManual: Boolean(match.isManual),
         matchType: getMatchType(teamASnap, teamBSnap),
         teamA: teamASnap,
         teamB: teamBSnap
@@ -1047,20 +1267,20 @@
 
       syncQueues(false);
       saveState();
-      showToast(`組別 #${match.seq}（${entry.matchType}）已結束並寫入紀錄！`, 'success');
+      showToast(`第 ${match.seq} 場（${entry.matchType}）已結束並寫入紀錄！`, 'success');
     }
 
     function handleReshuffleNext() {
       const eligible = getEligibleWaitingPlayers();
       if (eligible.length < 4) {
-        showToast('場下可用人數不足 4 人，無法重新配對', 'warning');
+        showToast('場下可用人數不足 4 人，無法重新運算', 'warning');
         return;
       }
       cancelSwap();
-      pushUndo('重新配對下一組');
+      pushUndo('重新運算下一組');
       syncQueues(true, true);
       saveState();
-      showToast('已重新配對下一組對戰組合', 'info');
+      showToast('已重新運算下一組對戰組合', 'info');
     }
 
     function handleTogglePause(playerId, event) {
@@ -1081,6 +1301,7 @@
     }
 
     function handleSelectForSwap(playerId) {
+      if (isManualModeActive()) return;
       const p = getPlayerById(playerId);
       if (!p) return;
 
@@ -1125,7 +1346,7 @@
     }
 
     // =========================================================================
-    // 6. 臨打記帳操作
+    // 7. 臨打記帳操作
     // =========================================================================
     function handleUpdateDefaultFee(val) {
       const fee = Math.max(0, Number(val) || 0);
@@ -1138,7 +1359,7 @@
     function confirmApplyDefaultFeeToAll() {
       openConfirmModal(
         '套用預設臨打費到今日全員',
-        `確定要將今日所有出席球友的應繳金額統一設為 $${state.defaultFee} 嗎？（已繳／未繳狀態會保留）`,
+        `確定要將今日所有已到場球友的應繳金額統一設為 $${state.defaultFee} 嗎？（已繳／未繳狀態會保留）`,
         () => {
           pushUndo(`套用預設費用 $${state.defaultFee} 至今日全員`);
           Object.keys(state.attendance).forEach(pid => {
@@ -1174,7 +1395,7 @@
     function confirmResetFees() {
       openConfirmModal(
         '🔄 重設今日繳費狀態',
-        '確定要將今日所有出席球友的繳費狀態全部重設為「❌ 未繳」嗎？（不會影響場次紀錄與球友名冊）',
+        '確定要將今日所有已到場球友的繳費狀態全部重設為「❌ 未繳」嗎？（不會影響場次紀錄與球友名冊）',
         () => {
           pushUndo('重設今日繳費狀態');
           Object.keys(state.attendance).forEach(pid => {
@@ -1187,7 +1408,7 @@
     }
 
     // =========================================================================
-    // 7. 名冊管理、15 位範例球友、清除場次紀錄、JSON 備份
+    // 8. 名冊管理、範例 15 人、清除紀錄、JSON 備份
     // =========================================================================
     function importSample15Players() {
       const samples = getSample15Template();
@@ -1206,7 +1427,7 @@
           };
           state.roster.push(existing);
         }
-        if (!state.attendance[existing.id]) {
+        if (s.arrived && !state.attendance[existing.id]) {
           state.attendance[existing.id] = {
             gamesPlayed: 0,
             lastOffTime: 0,
@@ -1221,7 +1442,7 @@
       syncQueues(false);
       saveState();
       switchTab('main');
-      showToast('已建立 15 位範例球友（8男7女，5–10級）並加入今日出席！', 'success');
+      showToast('已建立 15 位範例球友（12 位已到場 + 3 位遲到待報到），請手動排第 1、2 場！', 'success');
     }
 
     function renderModalLevelButtons(selectedLevel) {
@@ -1304,11 +1525,12 @@
         const newId = 'p_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
         state.roster.push({ id: newId, name, level, gender, fee });
         if (autoCheckin) {
+          const now = Date.now();
           state.attendance[newId] = {
             gamesPlayed: 0,
-            lastOffTime: 0,
+            lastOffTime: now,
             paused: false,
-            joinedAt: Date.now(),
+            joinedAt: now,
             paid: false,
             fee
           };
@@ -1325,18 +1547,19 @@
       if (!p) return;
       if (state.attendance[playerId]) {
         if (getOnCourtIds().has(playerId)) {
-          showToast(`「${p.name}」正在場上，請先結束該場次再取消出席`, 'warning');
+          showToast(`「${p.name}」正在場上，請先結束該場次再取消到場`, 'warning');
           return;
         }
-        pushUndo(`取消出席：${p.name}`);
+        pushUndo(`標記未到場：${p.name}`);
         delete state.attendance[playerId];
       } else {
-        pushUndo(`加入出席：${p.name}`);
+        const now = Date.now();
+        pushUndo(`標記已到場：${p.name}`);
         state.attendance[playerId] = {
           gamesPlayed: 0,
-          lastOffTime: 0,
+          lastOffTime: now,
           paused: false,
-          joinedAt: Date.now(),
+          joinedAt: now,
           paid: false,
           fee: typeof p.fee === 'number' ? p.fee : state.defaultFee
         };
@@ -1347,13 +1570,13 @@
 
     function toggleSelectAllAttendance(checkAll) {
       if (state.roster.length === 0) return;
-      pushUndo('全選今日出席');
+      pushUndo('全部設為今日已到場');
       const now = Date.now();
       state.roster.forEach((p, idx) => {
         if (checkAll && !state.attendance[p.id]) {
           state.attendance[p.id] = {
             gamesPlayed: 0,
-            lastOffTime: 0,
+            lastOffTime: now,
             paused: false,
             joinedAt: now + idx,
             paid: false,
@@ -1363,7 +1586,7 @@
       });
       syncQueues(false);
       saveState();
-      showToast('已將名冊所有球友加入今日出席', 'success');
+      showToast('已將名冊所有球友設為今日已到場', 'success');
     }
 
     function confirmDeletePlayer(playerId) {
@@ -1375,7 +1598,7 @@
       }
       openConfirmModal(
         '刪除球友',
-        `確定要從名冊中刪除「${p.name}」嗎？此操作也會將他移出今日出席與記帳名單。`,
+        `確定要從名冊中刪除「${p.name}」嗎？此操作也會將他移出今日到場與記帳名單。`,
         () => {
           pushUndo(`刪除球友：${p.name}`);
           state.roster = state.roster.filter(x => x.id !== playerId);
@@ -1387,7 +1610,6 @@
       );
     }
 
-    // 場次紀錄分頁專屬：清除場次紀錄（歸零上場次數，完整保留球友名冊與繳費，支援 Undo）
     function confirmClearHistory() {
       openConfirmModal(
         '🗑️ 清除場次紀錄',
@@ -1411,8 +1633,8 @@
 
     function confirmResetToday() {
       openConfirmModal(
-        '🔄 重設今日場次（保留名冊）',
-        '這會清空今日場上組別與場次紀錄，並將上場次數歸零（球友名冊會完整保留，且可用「回復上一步」復原）。確定執行嗎？',
+        '🔄 重設今日場次（保留球友名冊）',
+        '這會清空今日場上組別與場次紀錄、歸零上場次數並回到「第 1 場手動開場模式」（球友名冊會完整保留，且可用「回復上一步」復原）。確定執行嗎？',
         () => {
           pushUndo('重設今日場次');
           const now = Date.now();
@@ -1423,13 +1645,15 @@
             state.attendance[pid].joinedAt = now + idx;
           });
           state.activeMatches = [];
+          state.manualSlots = [null, null, null, null];
+          state.manualModeOverride = false;
           state.nextMatch = null;
           state.secondQueue = [];
           state.history = [];
           state.matchCounter = 1;
           syncQueues(true);
           saveState();
-          showToast('今日場次已重設，球友名冊已保留', 'info');
+          showToast('今日場次已重設，已回到第 1 場手動開場模式', 'info');
         }
       );
     }
@@ -1471,6 +1695,9 @@
           if (!Array.isArray(parsed.roster)) throw new Error('格式不符');
           state = { ...createInitialState(), ...parsed };
           state.roster = state.roster.map(p => ({ ...p, level: clampLevel(p.level) }));
+          if (!Array.isArray(state.manualSlots) || state.manualSlots.length !== 4) {
+            state.manualSlots = [null, null, null, null];
+          }
           syncQueues(false);
           saveState();
           showToast('已成功匯入備份資料！', 'success');
@@ -1484,10 +1711,9 @@
     }
 
     // =========================================================================
-    // 8. 🧪 沙盒模擬跑 10 場（2 面場輪轉 + 層級同場雙視角統計）
+    // 9. 🧪 沙盒模擬跑 10 場（2 面場輪轉 + 層級同場雙視角統計）
     // =========================================================================
     function runSimulation10Matches(forceUseSample = false) {
-      // 準備沙盒球友名單（絕不修改真實 state）
       let simPlayers = [];
       let sourceLabel = '';
 
@@ -1501,7 +1727,7 @@
           .filter(Boolean);
         if (activeRoster.length >= 8) {
           simPlayers = activeRoster;
-          sourceLabel = `使用目前今日出席名單（共 ${simPlayers.length} 人）`;
+          sourceLabel = `使用目前今日已到場名單（共 ${simPlayers.length} 人）`;
         }
       }
 
@@ -1518,11 +1744,11 @@
         }));
         sourceLabel = forceUseSample
           ? '使用內建 15 位範例球友（8 男 7 女，5–10 級）'
-          : '目前出席人數不足 8 人，自動改用 15 位範例球友（8 男 7 女，5–10 級）進行沙盒測試';
+          : '目前到場人數不足 8 人，自動改用 15 位範例球友（8 男 7 女，5–10 級）進行沙盒測試';
       }
 
       const simMap = new Map(simPlayers.map(p => [p.id, p]));
-      const activeCourts = []; // 最多同時 2 面場
+      const activeCourts = [];
       const matches = [];
       let clock = 1000;
 
@@ -1541,7 +1767,6 @@
           });
       }
 
-      // 預先開滿 2 面場
       while (activeCourts.length < 2) {
         const elig = getSimEligible();
         if (elig.length < 4) break;
@@ -1550,10 +1775,8 @@
         activeCourts.push({ teamA: picked.teamA, teamB: picked.teamB, levelDiff: picked.levelDiff });
       }
 
-      // 輪流結算並補新場，直到跑滿 10 場
       for (let seq = 1; seq <= 10; seq++) {
         if (activeCourts.length === 0) break;
-        // 取出最早開打的那一面場結束（模擬 2 面場輪轉）
         const finished = activeCourts.shift();
         clock += 100;
 
@@ -1583,7 +1806,6 @@
           rangeLabel: minLv === maxLv ? `${minLv}級` : `${minLv}–${maxLv}級`
         });
 
-        // 立刻從場下補進下一組上場，維持 2 面場運作
         const elig = getSimEligible();
         if (elig.length >= 4) {
           const picked = pickSmartFour(elig, false);
@@ -1593,10 +1815,9 @@
         }
       }
 
-      // 彙整統計資料
       const typeCounts = { '女雙': 0, '男雙': 0, '混雙': 0, '自由配': 0 };
       const rangeCounts = {};
-      const pairCounts = {}; // "5x6": count (涵蓋所有 5-10 兩兩組合)
+      const pairCounts = {};
       for (let i = 5; i <= 10; i++) {
         for (let j = i; j <= 10; j++) {
           pairCounts[`${i}x${j}`] = 0;
@@ -1609,7 +1830,6 @@
         totalDiff += m.levelDiff;
         rangeCounts[m.rangeLabel] = (rangeCounts[m.rangeLabel] || 0) + 1;
 
-        // 統計該場 4 人出現過哪些層級兩兩同場（每場每對層級最多計 1 次）
         const lvs = [...m.teamA, ...m.teamB].map(p => p.level);
         const seenPairsInMatch = new Set();
         for (let a = 0; a < lvs.length; a++) {
@@ -1644,13 +1864,9 @@
     function renderSimView() {
       const container = document.getElementById('sim-results-container');
       if (!lastSimResult) return;
-
       const r = lastSimResult;
 
-      // 1. 級距區間排序
       const rangeEntries = Object.entries(r.rangeCounts).sort((a, b) => b[1] - a[1]);
-
-      // 2. 兩兩層級同場（拆成「不同層級配對」與「同層級配對」，依次數由高到低）
       const crossPairs = [];
       const samePairs = [];
       for (let i = 5; i <= 10; i++) {
@@ -1667,7 +1883,6 @@
           📌 模擬名單來源：${escapeHTML(r.sourceLabel)}
         </div>
 
-        <!-- 卡片 1：對戰類型次數統計 -->
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <div class="bg-white rounded-3xl border-2 border-rose-200 p-4 shadow-sm">
             <div class="text-xs font-extrabold text-rose-700">♀ 女雙（4女）</div>
@@ -1687,9 +1902,7 @@
           </div>
         </div>
 
-        <!-- 卡片 2：層級同場統計（兩種視角） -->
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
-          <!-- 視角一：各場級距區間統計 -->
           <div class="lg:col-span-5 bg-white rounded-3xl border border-slate-200 p-5 shadow-sm">
             <h3 class="text-base font-extrabold text-slate-900 mb-1">📊 視角一：各場級距區間統計</h3>
             <p class="text-xs text-slate-500 mb-4">依每場 4 人的「最低級–最高級」分佈統計</p>
@@ -1711,10 +1924,9 @@
             </div>
           </div>
 
-          <!-- 視角二：層級兩兩同場次數熱度標籤 -->
           <div class="lg:col-span-7 bg-white rounded-3xl border border-slate-200 p-5 shadow-sm">
             <h3 class="text-base font-extrabold text-slate-900 mb-1">🔥 視角二：層級兩兩同場次數統計</h3>
-            <p class="text-xs text-slate-500 mb-3">統計哪兩個層級一起同場打過幾場（色塊越深代表越常同場，0 場代表完全避免該懸殊組合）</p>
+            <p class="text-xs text-slate-500 mb-3">統計哪兩個層級一起同場打過幾場（色塊越深代表越常同場）</p>
             <div class="flex flex-wrap gap-2 mb-3">
               ${crossPairs.map(p => {
                 const heat = p.cnt >= 5
@@ -1744,7 +1956,6 @@
           </div>
         </div>
 
-        <!-- 卡片 3：每人上場次數分佈 -->
         <div class="bg-white rounded-3xl border border-slate-200 p-5 shadow-sm">
           <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
             <h3 class="text-base font-extrabold text-slate-900">👥 每人上場次數分佈（公平性驗證）</h3>
@@ -1773,7 +1984,6 @@
           </div>
         </div>
 
-        <!-- 卡片 4：第 1~10 場完整逐場明細 -->
         <div class="bg-white rounded-3xl border border-slate-200 p-5 shadow-sm">
           <h3 class="text-base font-extrabold text-slate-900 mb-4">📋 第 1～10 場完整逐場明細</h3>
           <div class="space-y-2.5">
@@ -1809,12 +2019,12 @@
     }
 
     // =========================================================================
-    // 9. 畫面渲染引擎
+    // 10. 畫面渲染引擎
     // =========================================================================
     function switchTab(tab) {
       activeTab = tab;
       cancelSwap();
-      ['main', 'history', 'fees', 'roster', 'sim'].forEach(t => {
+      ['main', 'roster', 'fees', 'history', 'sim'].forEach(t => {
         const view = document.getElementById(`view-${t}`);
         const btn = document.getElementById(`tab-btn-${t}`);
         if (t === tab) {
@@ -1845,35 +2055,49 @@
       document.getElementById('btn-undo').disabled = undoLen === 0;
 
       if (activeTab === 'main') renderMainView();
-      if (activeTab === 'history') renderHistoryView();
-      if (activeTab === 'fees') renderFeesView();
       if (activeTab === 'roster') renderRosterView();
+      if (activeTab === 'fees') renderFeesView();
+      if (activeTab === 'history') renderHistoryView();
       if (activeTab === 'sim' && lastSimResult) renderSimView();
     }
 
     function renderMainView() {
-      const attCount = Object.keys(state.attendance).length;
+      const hasRoster = state.roster.length > 0;
       const emptyBanner = document.getElementById('empty-session-banner');
       const activeSec = document.getElementById('active-courts-section');
-      const queueSec = document.getElementById('queue-section');
+      const manualSec = document.getElementById('manual-mode-section');
+      const autoSec = document.getElementById('auto-mode-section');
+      const lateBar = document.getElementById('latecomer-checkin-bar');
       const waitSec = document.getElementById('waiting-pool-section');
 
-      if (attCount === 0) {
+      if (!hasRoster) {
         emptyBanner.classList.remove('hidden');
         activeSec.classList.add('hidden');
-        queueSec.classList.add('hidden');
+        manualSec.classList.add('hidden');
+        autoSec.classList.add('hidden');
+        lateBar.classList.add('hidden');
         waitSec.classList.add('hidden');
         return;
       }
 
       emptyBanner.classList.add('hidden');
       activeSec.classList.remove('hidden');
-      queueSec.classList.remove('hidden');
       waitSec.classList.remove('hidden');
 
       renderActiveMatches();
-      renderNextMatch();
-      renderSecondQueue();
+      renderLatecomerBar();
+
+      if (isManualModeActive()) {
+        manualSec.classList.remove('hidden');
+        autoSec.classList.add('hidden');
+        renderManualModePanel();
+      } else {
+        manualSec.classList.add('hidden');
+        autoSec.classList.remove('hidden');
+        renderNextMatch();
+        renderSecondQueue();
+      }
+
       renderWaitingPool();
     }
 
@@ -1885,9 +2109,9 @@
 
       if (count === 0) {
         grid.innerHTML = `
-          <div class="lg:col-span-2 bg-white rounded-3xl border-2 border-dashed border-slate-300 p-6 sm:p-8 text-center">
+          <div class="lg:col-span-2 bg-white rounded-3xl border-2 border-dashed border-slate-300 p-6 text-center">
             <p class="text-slate-600 font-bold text-base">目前場上無進行中的組別</p>
-            <p class="text-slate-400 text-xs sm:text-sm mt-1">請點擊下方「下一組預備」的【▶ 安排上場】按鈕開始比賽</p>
+            <p class="text-slate-400 text-xs sm:text-sm mt-1">請從下方挑選 4 位已到場球友安排開場</p>
           </div>
         `;
         return;
@@ -1912,10 +2136,11 @@
 
         return `
           <div class="bg-white rounded-3xl border-2 border-emerald-400 shadow-md overflow-hidden flex flex-col justify-between">
-            <div class="bg-emerald-600 text-white px-4 py-3 flex items-center justify-between gap-2">
+            <div class="bg-emerald-600 text-white px-4 py-3 flex flex-wrap items-center justify-between gap-2">
               <div class="flex items-center gap-2">
-                <span class="px-2.5 py-0.5 rounded-lg bg-white/20 font-black text-sm">進行中 #${match.seq}</span>
+                <span class="px-2.5 py-0.5 rounded-lg bg-white/20 font-black text-sm">第 ${match.seq} 場</span>
                 <span class="px-2 py-0.5 rounded-lg bg-white text-emerald-800 font-extrabold text-xs">${mType}</span>
+                <span class="px-2 py-0.5 rounded-lg bg-emerald-800/70 text-emerald-100 font-bold text-[11px]">${match.isManual ? '✋ 手動' : '🤖 自動'}</span>
                 <span class="text-xs font-medium text-emerald-50">開打 ${formatTime(match.startTime)}</span>
               </div>
               <span class="text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-700/80 text-emerald-100">
@@ -1926,14 +2151,14 @@
             <div class="p-4 bg-emerald-50/40 grid grid-cols-1 sm:grid-cols-2 gap-3 flex-1">
               <div class="space-y-2">
                 <div class="flex items-center justify-between px-1">
-                  <span class="text-xs font-extrabold text-emerald-800">A 隊</span>
+                  <span class="text-xs font-extrabold text-emerald-800">隊伍 A</span>
                   <span class="text-xs font-bold text-slate-500">級數和 ${sumA}</span>
                 </div>
                 ${teamA.map(renderPlayerRow).join('')}
               </div>
               <div class="space-y-2">
                 <div class="flex items-center justify-between px-1">
-                  <span class="text-xs font-extrabold text-teal-800">B 隊</span>
+                  <span class="text-xs font-extrabold text-teal-800">隊伍 B</span>
                   <span class="text-xs font-bold text-slate-500">級數和 ${sumB}</span>
                 </div>
                 ${teamB.map(renderPlayerRow).join('')}
@@ -1951,6 +2176,158 @@
       }).join('');
     }
 
+    function renderManualModePanel() {
+      const startedCount = getStartedMatchesCount();
+      const nextSeq = state.matchCounter;
+      const titleEl = document.getElementById('manual-mode-title');
+      const subEl = document.getElementById('manual-mode-subtitle');
+      const backAutoBtn = document.getElementById('btn-switch-back-auto');
+      const slotsContainer = document.getElementById('manual-slots-container');
+      const statusEl = document.getElementById('manual-selection-status');
+      const startBtn = document.getElementById('btn-start-manual-match');
+      const pickerEl = document.getElementById('manual-waiting-picker');
+      const availCountEl = document.getElementById('manual-available-count');
+
+      if (startedCount < 2) {
+        titleEl.textContent = `手動開場排點（第 ${startedCount + 1} 場 / 前 2 場手動）`;
+        subEl.textContent = '前 2 場考量有人遲到由球主手動挑選上場；第 3 場起系統將自動切換為智慧運算排點';
+        backAutoBtn.classList.add('hidden');
+      } else {
+        titleEl.textContent = `臨時手動排點（第 ${nextSeq} 場）`;
+        subEl.textContent = '目前為手動覆寫模式，排完這場後可隨時切回自動運算';
+        backAutoBtn.classList.remove('hidden');
+      }
+
+      const slots = state.manualSlots;
+      const filledCount = slots.filter(Boolean).length;
+      const slotObjs = slots.map(id => id ? getPlayerById(id) : null);
+
+      const sumA = (slotObjs[0]?.level || 0) + (slotObjs[1]?.level || 0);
+      const sumB = (slotObjs[2]?.level || 0) + (slotObjs[3]?.level || 0);
+
+      const renderSlotCard = (slotIdx, label) => {
+        const p = slotObjs[slotIdx];
+        if (p) {
+          return `
+            <button onclick="handleRemoveManualSlot(${slotIdx})"
+              class="w-full p-3.5 rounded-2xl border-2 border-amber-400 bg-amber-50/70 hover:bg-rose-50 hover:border-rose-300 transition-all active:scale-95 flex items-center justify-between gap-2 text-left group">
+              <div class="min-w-0">
+                <div class="flex items-center gap-1.5">
+                  ${getGenderBadgeHTML(p.gender)}
+                  <span class="font-extrabold text-base text-slate-900 truncate">${escapeHTML(p.name)}</span>
+                </div>
+                <div class="mt-1.5 flex items-center gap-1.5">
+                  ${getLevelBadgeHTML(p.level)}
+                  <span class="text-[11px] font-bold text-slate-500">已打 ${state.attendance[p.id]?.gamesPlayed || 0} 場</span>
+                </div>
+              </div>
+              <span class="px-2 py-1 rounded-lg bg-white/80 text-slate-400 group-hover:text-rose-600 text-xs font-black border border-slate-200 shrink-0">✕ 移除</span>
+            </button>
+          `;
+        }
+        return `
+          <div class="w-full p-4 rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50/70 flex flex-col items-center justify-center text-center min-h-[76px]">
+            <span class="text-xs font-extrabold text-slate-400">${label}</span>
+            <span class="text-[11px] text-slate-300 mt-0.5">點擊下方球友填入</span>
+          </div>
+        `;
+      };
+
+      slotsContainer.innerHTML = `
+        <div class="grid grid-cols-1 sm:grid-cols-11 gap-3 items-center">
+          <div class="sm:col-span-5 space-y-2">
+            <div class="flex items-center justify-between px-1">
+              <span class="text-xs font-extrabold text-blue-700">隊伍 A（左 2 位）</span>
+              <span class="text-xs font-extrabold text-slate-600">級數和 ${sumA}</span>
+            </div>
+            ${renderSlotCard(0, '隊伍 A - 第 1 位')}
+            ${renderSlotCard(1, '隊伍 A - 第 2 位')}
+          </div>
+          <div class="sm:col-span-1 flex justify-center py-1">
+            <span class="w-10 h-10 rounded-full bg-slate-900 text-white text-xs font-black flex items-center justify-center shadow-sm">VS</span>
+          </div>
+          <div class="sm:col-span-5 space-y-2">
+            <div class="flex items-center justify-between px-1">
+              <span class="text-xs font-extrabold text-indigo-700">隊伍 B（右 2 位）</span>
+              <span class="text-xs font-extrabold text-slate-600">級數和 ${sumB}</span>
+            </div>
+            ${renderSlotCard(2, '隊伍 B - 第 1 位')}
+            ${renderSlotCard(3, '隊伍 B - 第 2 位')}
+          </div>
+        </div>
+      `;
+
+      startBtn.disabled = filledCount < 4;
+      startBtn.textContent = `🚀 確認手動上場（第 ${nextSeq} 場）`;
+
+      if (filledCount === 4) {
+        const mType = getMatchType([slotObjs[0], slotObjs[1]], [slotObjs[2], slotObjs[3]]);
+        const diff = Math.abs(sumA - sumB);
+        statusEl.innerHTML = `✅ 已選滿 4 人（${getMatchTypeBadgeHTML(mType)} ｜ 雙方級數差 <strong>${diff}</strong> 級），可直接上場或按「自動分隊」`;
+      } else {
+        statusEl.textContent = `已選 ${filledCount} / 4 位（尚缺 ${4 - filledCount} 位，請點擊下方已到場球友）`;
+      }
+
+      // 渲染下方可點選的已到場等待球友
+      const selectedSet = new Set(slots.filter(Boolean));
+      const available = getEligibleWaitingPlayers().filter(p => !selectedSet.has(p.id));
+      availCountEl.textContent = `可選 ${available.length} 人`;
+
+      if (available.length === 0) {
+        pickerEl.innerHTML = `
+          <div class="col-span-full py-5 text-center text-sm text-slate-400 border-2 border-dashed border-slate-200 rounded-2xl">
+            目前場下無其他可選球友（可點下方「🏃 遲到球友快速報到」加入新到場人員）
+          </div>
+        `;
+      } else {
+        pickerEl.innerHTML = available.map(p => `
+          <button onclick="handlePickManualPlayer('${p.id}')"
+            class="p-3 rounded-2xl border-2 border-slate-200 bg-white hover:border-emerald-400 hover:bg-emerald-50/50 active:scale-95 transition-all text-left flex flex-col justify-between gap-2 shadow-sm">
+            <div class="flex items-center gap-1.5 min-w-0">
+              ${getGenderBadgeHTML(p.gender)}
+              <span class="font-extrabold text-sm sm:text-base text-slate-900 truncate">${escapeHTML(p.name)}</span>
+            </div>
+            <div class="flex items-center justify-between gap-1">
+              ${getLevelBadgeHTML(p.level)}
+              <span class="text-[11px] font-bold text-slate-500">${p.gamesPlayed} 場</span>
+            </div>
+          </button>
+        `).join('');
+      }
+    }
+
+    function renderLatecomerBar() {
+      const bar = document.getElementById('latecomer-checkin-bar');
+      const badge = document.getElementById('latecomer-count-badge');
+      const listEl = document.getElementById('latecomer-list');
+
+      const latecomers = state.roster
+        .filter(p => !state.attendance[p.id])
+        .sort((a, b) => a.name.localeCompare(b.name, 'zh-Hant'));
+
+      bar.classList.remove('hidden');
+
+      if (latecomers.length === 0) {
+        badge.textContent = '✅ 全員已到齊';
+        badge.className = 'px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-xs font-extrabold';
+        listEl.innerHTML = `<span class="text-xs font-bold text-slate-400">名冊中的 ${state.roster.length} 位球友皆已報到完成（若有臨時臨打可至「👥 球友名冊」新增）</span>`;
+        return;
+      }
+
+      badge.textContent = `尚未到場 ${latecomers.length} 人`;
+      badge.className = 'px-2.5 py-0.5 rounded-full bg-indigo-100 text-indigo-800 text-xs font-extrabold';
+
+      listEl.innerHTML = latecomers.map(p => `
+        <button onclick="handleQuickLatecomerCheckin('${p.id}')"
+          class="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-2xl border-2 border-indigo-200 bg-indigo-50/60 hover:bg-emerald-600 hover:border-emerald-600 hover:text-white active:scale-95 transition-all group shadow-sm">
+          ${getGenderBadgeHTML(p.gender)}
+          <span class="font-extrabold text-sm text-slate-900 group-hover:text-white">${escapeHTML(p.name)}</span>
+          ${getLevelBadgeHTML(p.level)}
+          <span class="text-xs font-black text-indigo-700 group-hover:text-emerald-100 ml-0.5">＋報到</span>
+        </button>
+      `).join('');
+    }
+
     function renderNextMatch() {
       const container = document.getElementById('next-match-content');
       const startBtn = document.getElementById('btn-start-next-match');
@@ -1966,7 +2343,7 @@
         container.innerHTML = `
           <div class="rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50 p-6 text-center">
             <p class="text-slate-600 font-bold text-sm">目前場下可用人員為 ${eligibleCount} 人，尚缺 ${Math.max(0, 4 - eligibleCount)} 人</p>
-            <p class="text-slate-400 text-xs mt-1">等場上組別按下「一鍵下場」後，系統將自動補齊並分隊</p>
+            <p class="text-slate-400 text-xs mt-1">等場上組別按下「一鍵下場」或遲到球友報到後，系統將自動補齊並分隊</p>
           </div>
         `;
         return;
@@ -2024,7 +2401,7 @@
         <div class="grid grid-cols-1 sm:grid-cols-11 gap-2.5 items-center">
           <div class="sm:col-span-5 space-y-2">
             <div class="flex items-center justify-between px-1">
-              <span class="text-xs font-extrabold text-blue-700">A 隊</span>
+              <span class="text-xs font-extrabold text-blue-700">隊伍 A</span>
               <span class="text-xs font-extrabold text-slate-600">級數和 ${sumA}</span>
             </div>
             ${teamA.map(renderCard).join('')}
@@ -2034,7 +2411,7 @@
           </div>
           <div class="sm:col-span-5 space-y-2">
             <div class="flex items-center justify-between px-1">
-              <span class="text-xs font-extrabold text-indigo-700">B 隊</span>
+              <span class="text-xs font-extrabold text-indigo-700">隊伍 B</span>
               <span class="text-xs font-extrabold text-slate-600">級數和 ${sumB}</span>
             </div>
             ${teamB.map(renderCard).join('')}
@@ -2084,10 +2461,17 @@
     function renderWaitingPool() {
       const listEl = document.getElementById('waiting-pool-list');
       const countEl = document.getElementById('waiting-pool-count');
+      const hintEl = document.getElementById('waiting-pool-hint');
+
+      const manualMode = isManualModeActive();
+      hintEl.innerHTML = manualMode
+        ? '點擊右側按鈕可切換<strong>暫休／回歸</strong>'
+        : '點擊卡片可<strong>互換位置</strong>，點擊右側按鈕可切換<strong>暫休／回歸</strong>';
 
       const onCourt = getOnCourtIds();
-      const inNext = new Set(state.nextMatch ? [...state.nextMatch.teamA, ...state.nextMatch.teamB] : []);
-      const inSecond = new Set(state.secondQueue || []);
+      const inNext = new Set(!manualMode && state.nextMatch ? [...state.nextMatch.teamA, ...state.nextMatch.teamB] : []);
+      const inSecond = new Set(!manualMode ? (state.secondQueue || []) : []);
+      const inManual = new Set(manualMode ? state.manualSlots.filter(Boolean) : []);
 
       const offList = [];
       for (const [pid, info] of Object.entries(state.attendance)) {
@@ -2097,6 +2481,7 @@
         let tag = '等待中';
         let weight = 2;
         if (info.paused) { tag = '暫休中'; weight = 3; }
+        else if (inManual.has(pid)) { tag = '已選上場'; weight = 0; }
         else if (inNext.has(pid)) { tag = '下一組'; weight = 0; }
         else if (inSecond.has(pid)) { tag = '預備組'; weight = 1; }
 
@@ -2119,24 +2504,26 @@
       countEl.textContent = `${offList.length} 人`;
 
       if (offList.length === 0) {
-        listEl.innerHTML = `<div class="col-span-full text-center py-4 text-sm text-slate-400 font-medium">所有今日出席球友皆在場上</div>`;
+        listEl.innerHTML = `<div class="col-span-full text-center py-4 text-sm text-slate-400 font-medium">所有已到場球友皆在場上</div>`;
         return;
       }
 
       listEl.innerHTML = offList.map(p => {
-        const isSelected = swapSourceId === p.id;
+        const isSelected = !manualMode && swapSourceId === p.id;
         const tagStyle = p.paused
           ? 'bg-slate-200 text-slate-600'
-          : p.tag === '下一組'
-            ? 'bg-blue-100 text-blue-700'
-            : p.tag === '預備組'
-              ? 'bg-indigo-100 text-indigo-700'
-              : 'bg-emerald-100 text-emerald-700';
+          : p.tag === '已選上場'
+            ? 'bg-amber-100 text-amber-800'
+            : p.tag === '下一組'
+              ? 'bg-blue-100 text-blue-700'
+              : p.tag === '預備組'
+                ? 'bg-indigo-100 text-indigo-700'
+                : 'bg-emerald-100 text-emerald-700';
 
         return `
-          <div onclick="${p.paused ? '' : `handleSelectForSwap('${p.id}')`}"
+          <div onclick="${(p.paused || manualMode) ? '' : `handleSelectForSwap('${p.id}')`}"
             class="p-3 rounded-2xl border-2 flex items-center justify-between gap-2 transition-all
-                   ${p.paused ? 'border-slate-200 bg-slate-100/80 opacity-70' : 'cursor-pointer hover:border-blue-300 bg-white'}
+                   ${p.paused ? 'border-slate-200 bg-slate-100/80 opacity-70' : manualMode ? 'bg-white' : 'cursor-pointer hover:border-blue-300 bg-white'}
                    ${isSelected ? 'swap-selected' : 'border-slate-200'}">
             <div class="min-w-0">
               <div class="flex items-center gap-1.5">
@@ -2203,7 +2590,7 @@
         .sort((a, b) => b.gamesPlayed - a.gamesPlayed || b.level - a.level);
 
       if (stats.length === 0) {
-        statsGrid.innerHTML = `<div class="col-span-full text-center py-4 text-sm text-slate-400">尚無出席球友</div>`;
+        statsGrid.innerHTML = `<div class="col-span-full text-center py-4 text-sm text-slate-400">尚無到場球友</div>`;
       } else {
         statsGrid.innerHTML = stats.map(p => `
           <div class="p-3 rounded-2xl border border-slate-200 bg-slate-50 flex items-center justify-between gap-2">
@@ -2251,6 +2638,7 @@
           <div class="p-4 rounded-2xl border border-slate-200 bg-slate-50/70 flex flex-col md:flex-row md:items-center justify-between gap-3">
             <div class="flex flex-wrap items-center gap-2">
               <span class="px-3 py-1 rounded-xl bg-slate-900 text-white font-black text-sm shrink-0">第 ${h.seq} 場</span>
+              ${getModeBadgeHTML(Boolean(h.isManual))}
               ${getMatchTypeBadgeHTML(mType)}
               <span class="text-xs font-bold px-2 py-0.5 rounded-lg bg-slate-200 text-slate-700">${rangeStr}</span>
               <span class="text-xs text-slate-500 font-medium">${formatTime(h.startTime)} ~ ${formatTime(h.endTime)}</span>
@@ -2296,8 +2684,8 @@
       if (list.length === 0) {
         grid.innerHTML = `
           <div class="col-span-full py-10 text-center text-slate-400 border-2 border-dashed border-slate-200 rounded-2xl">
-            <p class="font-bold">尚無今日出席球友</p>
-            <p class="text-xs mt-1">請先到「👥 球友名冊」勾選今日出席或一鍵建立 15 位範例球友</p>
+            <p class="font-bold">尚無今日到場球友</p>
+            <p class="text-xs mt-1">請先到「👥 球友名冊」勾選今日到場或點選快速報到</p>
           </div>
         `;
         return;
@@ -2358,8 +2746,10 @@
       }
 
       grid.innerHTML = filtered.map(p => {
-        const isChecked = Boolean(state.attendance[p.id]);
-        const games = state.attendance[p.id]?.gamesPlayed || 0;
+        const att = state.attendance[p.id];
+        const isChecked = Boolean(att);
+        const isPaused = Boolean(att?.paused);
+        const games = att?.gamesPlayed || 0;
         const fee = typeof p.fee === 'number' ? p.fee : state.defaultFee;
         return `
           <div class="p-3.5 rounded-2xl border-2 transition-all flex items-center justify-between gap-2
@@ -2373,6 +2763,7 @@
                 <div class="flex items-center gap-1.5">
                   ${getGenderBadgeHTML(p.gender)}
                   <span class="font-extrabold text-base text-slate-900 truncate">${escapeHTML(p.name)}</span>
+                  ${!isChecked ? `<span class="px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700 text-[10px] font-extrabold">未到場</span>` : ''}
                 </div>
                 <div class="mt-1 flex items-center gap-1.5 flex-wrap">
                   ${getLevelBadgeHTML(p.level)}
@@ -2382,6 +2773,13 @@
               </div>
             </div>
             <div class="flex items-center gap-1 shrink-0">
+              ${isChecked ? `
+                <button onclick="handleTogglePause('${p.id}', event)" title="${isPaused ? '回歸排點' : '暫休'}"
+                  class="px-2 h-9 rounded-xl text-xs font-extrabold border transition-all
+                         ${isPaused ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200'}">
+                  ${isPaused ? '回歸' : '暫休'}
+                </button>
+              ` : ''}
               <button onclick="openPlayerModal('${p.id}')" title="編輯"
                 class="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center text-sm">
                 ✏️
@@ -2397,7 +2795,7 @@
     }
 
     // =========================================================================
-    // 10. Toast 與二次確認視窗
+    // 11. Toast 與二次確認視窗
     // =========================================================================
     function showToast(message, type = 'info') {
       const container = document.getElementById('toast-container');
@@ -2415,7 +2813,7 @@
         el.style.opacity = '0';
         el.style.transform = 'translateY(-6px)';
         setTimeout(() => el.remove(), 300);
-      }, 2600);
+      }, 2800);
     }
 
     function openConfirmModal(title, desc, onOk) {
