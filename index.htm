@@ -9,7 +9,7 @@
   <!-- Google Fonts: Inter & Noto Sans TC -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
   <script>
     tailwind.config = {
       theme: {
@@ -19,7 +19,7 @@
           }
         }
       }
-    }
+    };
   </script>
   <style>
     body {
@@ -27,19 +27,18 @@
       -webkit-tap-highlight-color: transparent;
       touch-action: manipulation;
     }
-    /* Custom subtle scrollbar */
     ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-track { background: #f1f5f9; }
     ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
     ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 
-    @keyframes pulseRing {
+    @keyframes swapPulse {
       0% { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.55); }
       70% { box-shadow: 0 0 0 10px rgba(37, 99, 235, 0); }
       100% { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0); }
     }
     .swap-selected {
-      animation: pulseRing 1.4s infinite;
+      animation: swapPulse 1.3s infinite;
       border-color: #2563eb !important;
       background-color: #eff6ff !important;
     }
@@ -47,26 +46,26 @@
 </head>
 <body class="bg-slate-100 text-slate-900 min-h-screen flex flex-col">
 
-  <!-- ==================== 頂部導覽與工具列 ==================== -->
+  <!-- ==================== 頂部導覽與狀態列 ==================== -->
   <header class="sticky top-0 z-30 bg-white/95 backdrop-blur border-b border-slate-200 shadow-sm">
-    <div class="max-w-7xl mx-auto px-3 sm:px-6 py-2.5 flex flex-wrap items-center justify-between gap-2">
-      <!-- 標題與雲端狀態 -->
+    <div class="max-w-7xl mx-auto px-3 sm:px-6 py-2.5 flex flex-wrap items-center justify-between gap-2.5">
+      <!-- 品牌與存檔狀態 -->
       <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center text-xl font-black shadow-sm">
+        <div class="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center text-xl font-black shadow-sm shrink-0">
           🏸
         </div>
         <div>
           <h1 class="text-base sm:text-lg font-extrabold tracking-tight text-slate-900 leading-tight">
             羽球排點管理系統
           </h1>
-          <div class="flex items-center gap-1.5 text-xs font-medium mt-0.5">
-            <span id="sync-dot" class="w-2 h-2 rounded-full bg-emerald-500 transition-transform duration-300"></span>
-            <span id="sync-status" class="text-slate-600 transition-colors duration-300">💾 本機自動存檔中</span>
+          <div class="flex items-center gap-1.5 text-xs font-semibold mt-0.5">
+            <span id="save-dot" class="w-2 h-2 rounded-full bg-emerald-500 transition-transform duration-300"></span>
+            <span id="save-status" class="text-emerald-700">💾 本機已存檔</span>
           </div>
         </div>
       </div>
 
-      <!-- 主分頁切換 (桌面與平板) -->
+      <!-- 主分頁切換 -->
       <nav class="order-3 sm:order-2 w-full sm:w-auto flex bg-slate-100 p-1 rounded-xl border border-slate-200">
         <button onclick="switchTab('main')" id="tab-btn-main"
           class="flex-1 sm:flex-none px-4 py-2 rounded-lg text-sm font-bold transition-all bg-white text-emerald-700 shadow-sm">
@@ -74,15 +73,15 @@
         </button>
         <button onclick="switchTab('roster')" id="tab-btn-roster"
           class="flex-1 sm:flex-none px-4 py-2 rounded-lg text-sm font-bold transition-all text-slate-600 hover:text-slate-900">
-          👥 球友名冊 <span id="nav-attendance-count" class="ml-1 px-1.5 py-0.5 text-xs rounded-full bg-emerald-100 text-emerald-800">0</span>
+          👥 球友名冊 <span id="nav-attending-count" class="ml-1 px-1.5 py-0.5 text-xs rounded-full bg-emerald-100 text-emerald-800">0</span>
         </button>
         <button onclick="switchTab('history')" id="tab-btn-history"
           class="flex-1 sm:flex-none px-4 py-2 rounded-lg text-sm font-bold transition-all text-slate-600 hover:text-slate-900">
-          📋 場次紀錄 <span id="nav-history-count" class="ml-1 px-1.5 py-0.5 text-xs rounded-full bg-slate-200 text-slate-700">0</span>
+          📊 場次紀錄 <span id="nav-history-count" class="ml-1 px-1.5 py-0.5 text-xs rounded-full bg-slate-200 text-slate-700">0</span>
         </button>
       </nav>
 
-      <!-- 回復上一步 (Undo) 按鈕 -->
+      <!-- 回復上一步 (Undo) -->
       <div class="order-2 sm:order-3 flex items-center gap-2">
         <button id="btn-undo" onclick="handleUndo()" disabled
           class="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl font-bold text-sm border-2 transition-all
@@ -95,13 +94,13 @@
     </div>
   </header>
 
-  <!-- ==================== 互換模式浮動提示條 ==================== -->
+  <!-- ==================== 互換模式提示條 ==================== -->
   <div id="swap-banner" class="hidden fixed bottom-4 left-1/2 -translate-x-1/2 z-40 w-[92%] max-w-lg bg-blue-700 text-white px-5 py-3.5 rounded-2xl shadow-2xl border-2 border-blue-400 flex items-center justify-between gap-3">
     <div class="flex items-center gap-2.5">
       <span class="text-xl">🔄</span>
       <div class="text-sm leading-snug">
         已選取 <strong id="swap-selected-name" class="text-amber-300 text-base"></strong><br/>
-        <span class="text-blue-100 text-xs">請點擊另一位場下或預備球友進行互換</span>
+        <span class="text-blue-100 text-xs">請點擊另一位場下或預備球友進行位置互換</span>
       </div>
     </div>
     <button onclick="cancelSwap()" class="px-3.5 py-2 rounded-xl bg-white/20 hover:bg-white/30 text-white text-sm font-bold shrink-0">
@@ -109,7 +108,7 @@
     </button>
   </div>
 
-  <!-- ==================== Toast 通知訊息 ==================== -->
+  <!-- ==================== Toast 通知 ==================== -->
   <div id="toast-container" class="fixed top-20 right-4 z-50 flex flex-col gap-2 pointer-events-none max-w-sm w-[90%] sm:w-auto"></div>
 
   <!-- ==================== 主要內容區 ==================== -->
@@ -120,28 +119,28 @@
     <!-- ========================================================== -->
     <section id="view-main" class="space-y-6">
 
-      <!-- 空白引導卡片（當今日尚未有人出席時顯示） -->
-      <div id="empty-session-banner" class="hidden bg-white rounded-3xl border-2 border-dashed border-emerald-300 p-8 text-center shadow-sm">
+      <!-- 空白引導橫幅（尚無出席球友時顯示） -->
+      <div id="empty-session-banner" class="hidden bg-white rounded-3xl border-2 border-dashed border-emerald-300 p-8 sm:p-10 text-center shadow-sm">
         <div class="text-5xl mb-3">🏸</div>
-        <h2 class="text-xl font-extrabold text-slate-800 mb-2">今日尚未有出席球友</h2>
+        <h2 class="text-xl sm:text-2xl font-extrabold text-slate-900 mb-2">尚無今日出席球友</h2>
         <p class="text-slate-500 text-sm max-w-md mx-auto mb-6">
-          你可以先「一鍵匯入 15 位範例球友」立即體驗兩面場排點，或前往名冊勾選今天出席的球友。
+          點擊下方按鈕一鍵建立 15 位範例球友（含男女與 4–14 級），立即體驗兩面場智慧排點與一鍵下場！
         </p>
         <div class="flex flex-wrap items-center justify-center gap-3">
           <button onclick="importSample15Players()"
-            class="px-5 py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-base shadow-md active:scale-95 transition-all">
-            ⚡ 一鍵匯入 15 位範例球友
+            class="px-6 py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-base shadow-md active:scale-95 transition-all">
+            ⚡ 一鍵建立 15 位範例球友
           </button>
           <button onclick="switchTab('roster')"
-            class="px-5 py-3 rounded-2xl bg-slate-800 hover:bg-slate-900 text-white font-bold text-base shadow-md active:scale-95 transition-all">
-            👥 前往設定名冊與出席
+            class="px-6 py-3.5 rounded-2xl bg-slate-800 hover:bg-slate-900 text-white font-bold text-base shadow-md active:scale-95 transition-all">
+            👥 前往球友名冊手動新增
           </button>
         </div>
       </div>
 
-      <!-- 區塊一：場上進行中（不分 1/2 號場，以組別呈現） -->
-      <div id="active-courts-section">
-        <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+      <!-- 區塊一：場上進行中 -->
+      <div id="active-courts-section" class="space-y-3">
+        <div class="flex flex-wrap items-center justify-between gap-2">
           <div class="flex items-center gap-2.5">
             <span class="w-3 h-3 rounded-full bg-emerald-500 animate-pulse"></span>
             <h2 class="text-lg sm:text-xl font-extrabold text-slate-900">場上進行中</h2>
@@ -150,57 +149,55 @@
             </span>
           </div>
           <p class="text-xs sm:text-sm text-slate-500 font-medium">
-            👇 打完下場請直接點自己的名字，4 人都下場將自動結算紀錄
+            打完直接點卡片下方「一鍵下場」，4 人同時結算並回到等待區
           </p>
         </div>
 
         <div id="active-matches-grid" class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <!-- 動態產生進行中的組別卡片 -->
+          <!-- 動態產生進行中組別卡片 -->
         </div>
       </div>
 
       <!-- 區塊二：下一組上場 & 再下一組預備 -->
       <div id="queue-section" class="grid grid-cols-1 lg:grid-cols-12 gap-4">
-        <!-- 左側 (佔 7 欄)：下一組上場 (4人 2v2) -->
+        <!-- 左側 (7 欄)：下一組上場（4人） -->
         <div class="lg:col-span-7 bg-white rounded-3xl border-2 border-blue-200 shadow-sm p-4 sm:p-5 flex flex-col justify-between">
           <div>
             <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
               <div class="flex items-center gap-2">
                 <span class="px-2.5 py-1 rounded-xl bg-blue-600 text-white text-xs font-extrabold tracking-wide">NEXT</span>
-                <h2 class="text-lg sm:text-xl font-extrabold text-slate-900">下一組上場</h2>
+                <h2 class="text-lg sm:text-xl font-extrabold text-slate-900">下一組上場（4人）</h2>
               </div>
               <div class="flex items-center gap-2">
                 <span id="next-match-balance-badge" class="text-xs font-bold px-2.5 py-1 rounded-lg bg-slate-100 text-slate-600">
                   等待湊滿 4 人
                 </span>
-                <button onclick="handleShuffleNextMatch()" title="重新微調配對"
+                <button onclick="handleReshuffleNext()" title="重新配對"
                   class="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs sm:text-sm font-bold border border-slate-200 active:scale-95 transition-all">
-                  🔀 重新微調配對
+                  🔀 重新配對
                 </button>
               </div>
             </div>
 
-            <!-- 下一組 2v2 內容 -->
             <div id="next-match-content" class="mb-4">
-              <!-- 動態產生 -->
+              <!-- 動態產生 2v2 -->
             </div>
           </div>
 
-          <!-- 上場大按鈕 -->
           <div class="pt-3 border-t border-slate-100 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
             <p class="text-xs text-slate-500">
-              💡 點擊任兩位場下或預備球友即可直接互換位置
+              💡 點擊任兩位場下或預備球友即可直接互換順序
             </p>
             <button id="btn-start-next-match" onclick="handleStartNextMatch()" disabled
               class="px-6 py-3.5 rounded-2xl font-extrabold text-base sm:text-lg shadow-md transition-all active:scale-95
                      bg-emerald-600 hover:bg-emerald-700 text-white
                      disabled:bg-slate-200 disabled:text-slate-400 disabled:shadow-none disabled:cursor-not-allowed">
-              🏸 開始上場
+              🚀 這組上場
             </button>
           </div>
         </div>
 
-        <!-- 右側 (佔 5 欄)：再下一組預備 -->
+        <!-- 右側 (5 欄)：再下一組預備 -->
         <div class="lg:col-span-5 bg-white rounded-3xl border border-slate-200 shadow-sm p-4 sm:p-5 flex flex-col">
           <div class="flex items-center justify-between gap-2 mb-3">
             <div class="flex items-center gap-2">
@@ -210,53 +207,51 @@
             <span id="second-queue-count" class="text-xs font-bold text-slate-500">0 / 4 人</span>
           </div>
           <p class="text-xs text-slate-500 mb-3">
-            當場上有人點擊「已下場」時，系統會自動補齊空缺。
+            15 人開兩面場時，此區會先顯示 3 位等待者 + 1 個空缺，待場上結束自動補位。
           </p>
           <div id="second-queue-grid" class="grid grid-cols-2 gap-2.5 flex-1">
-            <!-- 動態產生最多 4 格 -->
+            <!-- 動態產生 4 格 -->
           </div>
         </div>
       </div>
 
-      <!-- 區塊三：場下等待與暫休區 -->
+      <!-- 區塊三：場下等待與休息區 -->
       <div id="waiting-pool-section" class="bg-white rounded-3xl border border-slate-200 shadow-sm p-4 sm:p-5">
         <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
           <div class="flex items-center gap-2">
-            <h2 class="text-base sm:text-lg font-extrabold text-slate-900">場下等待與休息區</h2>
+            <h2 class="text-base sm:text-lg font-extrabold text-slate-900">場下等待與暫休區</h2>
             <span id="waiting-pool-count" class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-slate-100 text-slate-700">0 人</span>
           </div>
-          <div class="flex items-center gap-3 text-xs text-slate-500">
-            <span>點擊卡片可<strong>互換位置</strong>，點擊右側按鈕可切換<strong>暫休／回歸</strong></span>
-          </div>
+          <span class="text-xs text-slate-500">點擊卡片可<strong>互換位置</strong>，點擊右側按鈕可切換<strong>暫休／回歸</strong></span>
         </div>
 
         <div id="waiting-pool-list" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5">
-          <!-- 動態產生等待中與暫休球友 -->
+          <!-- 動態產生 -->
         </div>
       </div>
 
     </section>
 
     <!-- ========================================================== -->
-    <!-- TAB 2: 永久名冊與今日出席                                   -->
+    <!-- TAB 2: 球友名冊與資料管理                                   -->
     <!-- ========================================================== -->
     <section id="view-roster" class="hidden space-y-6">
       <!-- 頂部操作列 -->
       <div class="bg-white rounded-3xl border border-slate-200 shadow-sm p-4 sm:p-5 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 class="text-lg sm:text-xl font-extrabold text-slate-900">永久球員總名冊與今日出席</h2>
+          <h2 class="text-lg sm:text-xl font-extrabold text-slate-900">球友總名冊與今日出席</h2>
           <p class="text-xs sm:text-sm text-slate-500 mt-0.5">
-            總名冊永久儲存在雲端，每次打球只要勾選今天出席的球友即可開打。
+            名冊自動儲存在本機瀏覽器，每次打球只要勾選今天出席的球友即可開打。
           </p>
         </div>
         <div class="flex flex-wrap items-center gap-2">
           <button onclick="openPlayerModal()"
             class="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm shadow-sm active:scale-95 transition-all">
-            ＋ 新增球友／臨打
+            ＋ 新增球友
           </button>
           <button onclick="importSample15Players()"
-            class="px-4 py-2.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 font-bold text-sm active:scale-95 transition-all">
-            ⚡ 匯入 15 位範例球友
+            class="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm shadow-sm active:scale-95 transition-all">
+            ⚡ 一鍵建立 15 位範例球友
           </button>
           <button onclick="toggleSelectAllAttendance(true)"
             class="px-3.5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm active:scale-95 transition-all">
@@ -265,7 +260,7 @@
         </div>
       </div>
 
-      <!-- 搜尋與篩選 -->
+      <!-- 搜尋與名冊列表 -->
       <div class="bg-white rounded-3xl border border-slate-200 shadow-sm p-4 sm:p-5">
         <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
           <div class="relative flex-1 min-w-[200px] max-w-md">
@@ -274,19 +269,18 @@
             <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400">🔍</span>
           </div>
           <div class="text-sm font-bold text-slate-700">
-            今日已勾選出席：<span id="roster-checked-count" class="text-emerald-600 text-base">0</span> / <span id="roster-total-count">0</span> 人
+            今日出席：<span id="roster-checked-count" class="text-emerald-600 text-base">0</span> / <span id="roster-total-count">0</span> 人
           </div>
         </div>
 
-        <!-- 名冊網格 -->
         <div id="roster-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           <!-- 動態產生 -->
         </div>
       </div>
 
-      <!-- 資料備份與今日重設區 -->
+      <!-- 資料備份與手動清除區 -->
       <div class="bg-white rounded-3xl border border-slate-200 shadow-sm p-4 sm:p-5">
-        <h3 class="text-base font-extrabold text-slate-800 mb-3">系統管理、資料備份與手動清除</h3>
+        <h3 class="text-base font-extrabold text-slate-800 mb-3">資料備份與手動清除</h3>
         <div class="flex flex-wrap items-center gap-3">
           <button onclick="exportBackupJSON()"
             class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-900 text-white font-bold text-sm active:scale-95 transition-all">
@@ -299,7 +293,7 @@
           <div class="flex flex-wrap items-center gap-2 sm:ml-auto">
             <button onclick="confirmResetToday()"
               class="px-4 py-2.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 font-bold text-sm active:scale-95 transition-all">
-              🔄 重設今日場次（保留球友名冊）
+              🔄 重設今日場次（保留名冊）
             </button>
             <button onclick="confirmClearAllData()"
               class="px-4 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-sm shadow-sm active:scale-95 transition-all">
@@ -310,351 +304,297 @@
       </div>
     </section>
 
-  <!-- ==================== JavaScript 本機自動存檔與選配 Firebase 雲端同步 ==================== -->
-  <script type="module">
-    // =========================================================================
-    // 【選配】Firebase 雲端同步設定區
-    // 預設 apiKey 為空：系統將完全使用「本機 localStorage 自動存檔」，不載入 Firebase、零錯誤。
-    // 未來若需多台平板跨裝置即時同步，只要將 Firebase Console 取得的設定貼入下方即可自動啟用。
-    // =========================================================================
-    const USER_FIREBASE_CONFIG = {
-      apiKey: "",
-      authDomain: "",
-      projectId: "",
-      storageBucket: "",
-      messagingSenderId: "",
-      appId: ""
-    };
+    <!-- ========================================================== -->
+    <!-- TAB 3: 場次紀錄與上場統計                                   -->
+    <!-- ========================================================== -->
+    <section id="view-history" class="hidden space-y-6">
+      <!-- 今日個人上場次數統計 -->
+      <div class="bg-white rounded-3xl border border-slate-200 shadow-sm p-4 sm:p-5">
+        <div class="flex items-center justify-between gap-2 mb-4">
+          <h2 class="text-lg sm:text-xl font-extrabold text-slate-900">今日球友上場次數統計</h2>
+          <span id="stats-total-matches" class="px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-extrabold">
+            累計完成 0 場
+          </span>
+        </div>
+        <div id="player-stats-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2.5">
+          <!-- 動態產生 -->
+        </div>
+      </div>
 
-    const STORAGE_KEY = 'badminton_queue_state_v2';
+      <!-- 歷史場次列表 -->
+      <div class="bg-white rounded-3xl border border-slate-200 shadow-sm p-4 sm:p-5">
+        <h2 class="text-lg sm:text-xl font-extrabold text-slate-900 mb-4">已完成場次紀錄</h2>
+        <div id="match-history-list" class="space-y-3">
+          <!-- 動態產生 -->
+        </div>
+      </div>
+    </section>
 
-    // =========================================================================
-    // 1. 全域狀態定義
-    // =========================================================================
-    const appId = typeof __app_id !== 'undefined' ? __app_id : 'badminton-queue-default';
-    let db = null;
-    let auth = null;
-    let currentUser = null;
-    let isCloudReady = false;
-    let firestoreSetDoc = null;
-    let firestoreDoc = null;
+  </main>
 
-    // 永久總名冊
-    let rosterState = {
-      players: [], // [{ id, name, level, gender, createdAt }]
-      updatedAt: 0
-    };
+  <!-- ==================== Modal：新增 / 編輯球友 ==================== -->
+  <div id="player-modal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden border border-slate-200">
+      <div class="px-6 py-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+        <h3 id="player-modal-title" class="text-lg font-extrabold text-slate-900">新增球友</h3>
+        <button onclick="closePlayerModal()" class="w-8 h-8 rounded-full hover:bg-slate-200 text-slate-500 font-bold">✕</button>
+      </div>
+      <form onsubmit="handleSavePlayer(event)" class="p-6 space-y-4">
+        <input type="hidden" id="edit-player-id" />
 
-    // 今日開團狀態（本機自動存檔 & 選配雲端同步 & Undo）
-    let sessionState = createEmptySession();
+        <!-- 姓名 -->
+        <div>
+          <label class="block text-sm font-bold text-slate-700 mb-1.5">球友姓名</label>
+          <input id="input-player-name" type="text" required maxlength="20" placeholder="例如：阿明"
+            class="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-base font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+        </div>
 
-    // 介面互動暫存狀態
+        <!-- 性別 -->
+        <div>
+          <label class="block text-sm font-bold text-slate-700 mb-1.5">性別</label>
+          <div class="grid grid-cols-2 gap-3">
+            <label class="cursor-pointer">
+              <input type="radio" name="gender" value="M" checked class="peer hidden" />
+              <div class="py-2.5 rounded-xl border-2 border-slate-200 text-center font-bold text-slate-600
+                          peer-checked:border-blue-500 peer-checked:bg-blue-50 peer-checked:text-blue-700 transition-all">
+                ♂ 男生
+              </div>
+            </label>
+            <label class="cursor-pointer">
+              <input type="radio" name="gender" value="F" class="peer hidden" />
+              <div class="py-2.5 rounded-xl border-2 border-slate-200 text-center font-bold text-slate-600
+                          peer-checked:border-rose-500 peer-checked:bg-rose-50 peer-checked:text-rose-700 transition-all">
+                ♀ 女生
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <!-- 羽球層級 1-18 -->
+        <div>
+          <div class="flex items-center justify-between mb-1.5">
+            <label class="text-sm font-bold text-slate-700">羽球層級 (1–18 級)</label>
+            <span id="modal-level-preview" class="px-2.5 py-0.5 rounded-lg text-xs font-extrabold border">Lv.7 中階</span>
+          </div>
+          <input id="input-player-level" type="range" min="1" max="18" value="7"
+            oninput="updateModalLevelPreview(this.value)"
+            class="w-full accent-emerald-600 cursor-pointer" />
+          <div class="flex justify-between text-[11px] font-bold text-slate-400 mt-1">
+            <span>1 新手</span>
+            <span>6 初階</span>
+            <span>10 中上</span>
+            <span>14 高階</span>
+            <span>18 甲組</span>
+          </div>
+        </div>
+
+        <!-- 新增時自動加入今日出席 -->
+        <div id="modal-checkin-row" class="pt-1">
+          <label class="flex items-center gap-2.5 cursor-pointer select-none">
+            <input id="input-player-checkin" type="checkbox" checked class="w-5 h-5 accent-emerald-600 rounded" />
+            <span class="text-sm font-bold text-slate-700">立即加入「今日出席」參與排點</span>
+          </label>
+        </div>
+
+        <div class="pt-3 flex items-center justify-end gap-2">
+          <button type="button" onclick="closePlayerModal()"
+            class="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm">
+            取消
+          </button>
+          <button type="submit"
+            class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-sm shadow-sm">
+            儲存球友
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ==================== Modal：二次確認視窗（取代 confirm） ==================== -->
+  <div id="confirm-modal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden border border-slate-200">
+      <div class="p-6">
+        <h3 id="confirm-modal-title" class="text-lg font-extrabold text-slate-900 mb-2">確認操作</h3>
+        <p id="confirm-modal-desc" class="text-sm text-slate-600 leading-relaxed"></p>
+      </div>
+      <div class="px-6 py-4 bg-slate-50 border-t border-slate-200 flex items-center justify-end gap-2.5">
+        <button onclick="closeConfirmModal()"
+          class="px-4 py-2.5 rounded-xl bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 font-bold text-sm">
+          取消
+        </button>
+        <button id="confirm-modal-ok"
+          class="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-sm shadow-sm">
+          確定執行
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== 核心邏輯（純 Vanilla JS + localStorage） ==================== -->
+  <script>
+    const STORAGE_KEY = 'badminton_queue_v3';
+
+    // 系統完整狀態
+    let state = createInitialState();
     let activeTab = 'main';
-    let swapSource = null; // { playerId, area: 'nextA'|'nextB'|'second'|'waiting', index }
+    let swapSourceId = null;
     let confirmCallback = null;
 
-    function createEmptySession() {
+    function createInitialState() {
       return {
-        attendance: {},     // { [playerId]: { gamesPlayed: 0, lastOffTime: 0, paused: false, joinedAt: 0 } }
-        activeMatches: [],  // [{ id, seq, startTime, teamA: [{playerId, isOff}], teamB: [{playerId, isOff}] }]
-        nextMatch: null,    // { teamA: [id, id], teamB: [id, id] } | null
-        secondQueue: [],    // [id, id, ...] up to 4
-        matchHistory: [],   // [{ id, seq, startTime, endTime, teamA: [...], teamB: [...] }]
+        roster: [],          // [{ id, name, level, gender }]
+        attendance: {},      // { [id]: { gamesPlayed: 0, lastOffTime: 0, paused: false, joinedAt: 0 } }
+        activeMatches: [],   // [{ id, seq, startTime, teamA: [id, id], teamB: [id, id] }]
+        nextMatch: null,     // { teamA: [id, id], teamB: [id, id] } | null
+        secondQueue: [],     // [id, ...] up to 4
+        history: [],         // [{ id, seq, startTime, endTime, teamA: [playerSnap], teamB: [playerSnap] }]
         matchCounter: 1,
-        undoStack: [],      // array of JSON strings (max 30)
-        updatedAt: Date.now()
+        undoStack: []        // array of JSON strings (max 30)
       };
     }
 
     // =========================================================================
-    // 2. 100% 穩定的 localStorage 本機持久化 + 選配 Firebase 雲端同步
+    // 1. 100% 穩定的 localStorage 讀寫
     // =========================================================================
-    function loadFromLocalStorage() {
+    function loadState() {
       try {
         const raw = localStorage.getItem(STORAGE_KEY);
-        if (!raw) return false;
+        if (!raw) return;
         const parsed = JSON.parse(raw);
-        if (parsed && parsed.rosterState && Array.isArray(parsed.rosterState.players)) {
-          rosterState = {
-            players: parsed.rosterState.players,
-            updatedAt: parsed.rosterState.updatedAt || Date.now()
+        if (parsed && typeof parsed === 'object') {
+          state = {
+            ...createInitialState(),
+            ...parsed
           };
         }
-        if (parsed && parsed.sessionState) {
-          sessionState = {
-            ...createEmptySession(),
-            ...parsed.sessionState
-          };
-        }
-        return true;
       } catch (err) {
-        console.warn('讀取本機存檔失敗，將使用初始狀態：', err);
-        return false;
+        console.warn('讀取本機存檔失敗，已重設為初始狀態：', err);
+        state = createInitialState();
       }
     }
 
-    function saveToLocalStorage() {
+    function saveState() {
       try {
-        const payload = {
-          version: 2,
-          savedAt: Date.now(),
-          rosterState,
-          sessionState
-        };
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
-        flashSaveIndicator();
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        updateSaveIndicator();
       } catch (err) {
-        console.error('寫入 localStorage 失敗：', err);
-        showToast('本機存檔失敗，請確認瀏覽器未處於無痕模式或空間已滿', 'error');
+        console.error('寫入本機存檔失敗：', err);
+        showToast('本機存檔失敗，請確認非無痕模式或儲存空間未滿', 'error');
       }
-    }
-
-    function flashSaveIndicator() {
-      const dot = document.getElementById('sync-dot');
-      const label = document.getElementById('sync-status');
-      const nowStr = new Date().toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
-      const baseText = isCloudReady ? '☁️ Firebase 雲端同步中' : '💾 本機自動存檔中';
-
-      if (label) {
-        label.textContent = `${baseText}（已存檔 ${nowStr}）`;
-        label.classList.add('text-emerald-700', 'font-bold');
-        setTimeout(() => {
-          label.classList.remove('text-emerald-700', 'font-bold');
-        }, 1200);
-      }
-      if (dot) {
-        dot.classList.add('scale-150');
-        setTimeout(() => dot.classList.remove('scale-150'), 350);
-      }
-    }
-
-    async function initAppStorage() {
-      // 1. 頁面載入立即還原 localStorage，確保零延遲且離線可用
-      loadFromLocalStorage();
-      setSyncStatus('local', '💾 本機自動存檔中');
       renderAll();
-
-      // 2. 檢查是否有填入選配的 Firebase 設定；若 apiKey 為空則完全不啟動 Firebase（零 Console 錯誤）
-      const hasUserFirebase = Boolean(USER_FIREBASE_CONFIG && USER_FIREBASE_CONFIG.apiKey && USER_FIREBASE_CONFIG.apiKey.trim());
-      if (!hasUserFirebase) {
-        return;
-      }
-
-      try {
-        setSyncStatus('connecting', '☁️ 正在連線 Firebase...');
-        const [appMod, authMod, fsMod] = await Promise.all([
-          import("https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js"),
-          import("https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js"),
-          import("https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js")
-        ]);
-
-        const app = appMod.initializeApp(USER_FIREBASE_CONFIG);
-        db = fsMod.getFirestore(app);
-        auth = authMod.getAuth(app);
-        firestoreSetDoc = fsMod.setDoc;
-        firestoreDoc = fsMod.doc;
-
-        try {
-          const cred = await authMod.signInAnonymously(auth);
-          currentUser = cred.user;
-        } catch (authErr) {
-          // 若使用者在 Firebase 未啟用匿名登入但已開啟 Firestore 測試規則，仍允許直接讀寫
-          currentUser = { uid: 'public_guest' };
-        }
-
-        isCloudReady = true;
-        setSyncStatus('cloud', '☁️ Firebase 雲端同步中');
-
-        const rosterDocRef = fsMod.doc(db, 'badminton_system', 'roster_v2');
-        const sessionDocRef = fsMod.doc(db, 'badminton_system', 'session_v2');
-
-        fsMod.onSnapshot(rosterDocRef, (snap) => {
-          if (snap.exists()) {
-            const data = snap.data();
-            rosterState = {
-              players: Array.isArray(data.players) ? data.players : [],
-              updatedAt: data.updatedAt || Date.now()
-            };
-            saveToLocalStorage();
-            renderAll();
-          }
-        }, (err) => {
-          console.error('Firebase 名冊同步錯誤：', err);
-          isCloudReady = false;
-          setSyncStatus('local', '💾 本機自動存檔中（雲端權限異常）');
-        });
-
-        fsMod.onSnapshot(sessionDocRef, (snap) => {
-          if (snap.exists()) {
-            const data = snap.data();
-            sessionState = {
-              ...createEmptySession(),
-              ...data
-            };
-            saveToLocalStorage();
-            renderAll();
-          }
-        }, (err) => {
-          console.error('Firebase 場次同步錯誤：', err);
-          isCloudReady = false;
-          setSyncStatus('local', '💾 本機自動存檔中（雲端權限異常）');
-        });
-      } catch (err) {
-        console.error('Firebase 初始化失敗，已自動切換回本機自動存檔：', err);
-        isCloudReady = false;
-        setSyncStatus('local', '💾 本機自動存檔中');
-      }
     }
 
-    async function saveRosterToCloud() {
-      rosterState.updatedAt = Date.now();
-      saveToLocalStorage();
-      renderAll();
-      if (!isCloudReady || !db || !firestoreSetDoc || !firestoreDoc) return;
-      try {
-        const rosterDocRef = firestoreDoc(db, 'badminton_system', 'roster_v2');
-        await firestoreSetDoc(rosterDocRef, rosterState);
-      } catch (err) {
-        console.error('Save roster to cloud error:', err);
-        showToast('已存檔至本機，但雲端同步失敗', 'warning');
-      }
-    }
-
-    async function saveSessionToCloud() {
-      sessionState.updatedAt = Date.now();
-      saveToLocalStorage();
-      renderAll();
-      if (!isCloudReady || !db || !firestoreSetDoc || !firestoreDoc) return;
-      try {
-        const sessionDocRef = firestoreDoc(db, 'badminton_system', 'session_v2');
-        await firestoreSetDoc(sessionDocRef, sessionState);
-      } catch (err) {
-        console.error('Save session to cloud error:', err);
-        showToast('已存檔至本機，但雲端同步失敗', 'warning');
-      }
-    }
-
-    function setSyncStatus(state, text) {
-      const dot = document.getElementById('sync-dot');
-      const label = document.getElementById('sync-status');
-      if (label) label.textContent = text;
-      if (!dot) return;
-      dot.className = 'w-2 h-2 rounded-full transition-transform duration-300 ';
-      if (state === 'cloud') {
-        dot.classList.add('bg-blue-500');
-      } else if (state === 'local') {
-        dot.classList.add('bg-emerald-500');
-      } else {
-        dot.classList.add('bg-amber-400', 'animate-pulse');
-      }
-    }
-
-    async function saveRosterToCloud() {
-      rosterState.updatedAt = Date.now();
-      renderAll();
-      if (!isCloudReady || !currentUser || !db) return;
-      try {
-        const rosterDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'badminton_system', 'roster_v1');
-        await setDoc(rosterDocRef, rosterState);
-      } catch (err) {
-        console.error('Save roster error:', err);
-        showToast('名冊雲端儲存失敗，請檢查網路', 'error');
-      }
-    }
-
-    async function saveSessionToCloud() {
-      sessionState.updatedAt = Date.now();
-      renderAll();
-      if (!isCloudReady || !currentUser || !db) return;
-      try {
-        const sessionDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'badminton_system', 'session_v1');
-        await setDoc(sessionDocRef, sessionState);
-      } catch (err) {
-        console.error('Save session error:', err);
-        showToast('狀態雲端儲存失敗，請檢查網路', 'error');
-      }
-    }
-
-    function setSyncStatus(state, text) {
-      const dot = document.getElementById('sync-dot');
-      const label = document.getElementById('sync-status');
-      label.textContent = text;
-      dot.className = 'w-2 h-2 rounded-full ';
-      if (state === 'online') {
-        dot.classList.add('bg-emerald-500');
-      } else if (state === 'error') {
-        dot.classList.add('bg-rose-500');
-      } else {
-        dot.classList.add('bg-amber-400');
+    function updateSaveIndicator() {
+      const nowStr = new Date().toLocaleTimeString('zh-TW', {
+        hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
+      });
+      const statusEl = document.getElementById('save-status');
+      const dotEl = document.getElementById('save-dot');
+      if (statusEl) statusEl.textContent = `💾 本機已存檔 (${nowStr})`;
+      if (dotEl) {
+        dotEl.classList.add('scale-150');
+        setTimeout(() => dotEl.classList.remove('scale-150'), 300);
       }
     }
 
     // =========================================================================
-    // 4. Undo 狀態快照機制（最多保留 30 步，包含名冊與場次完整還原）
+    // 2. Undo 狀態快照（最多 30 步）
     // =========================================================================
-    function pushUndoSnapshot(actionLabel) {
+    function pushUndo(actionLabel) {
       const snapshot = {
         label: actionLabel,
-        rosterPlayers: rosterState.players,
-        attendance: sessionState.attendance,
-        activeMatches: sessionState.activeMatches,
-        nextMatch: sessionState.nextMatch,
-        secondQueue: sessionState.secondQueue,
-        matchHistory: sessionState.matchHistory,
-        matchCounter: sessionState.matchCounter
+        roster: state.roster,
+        attendance: state.attendance,
+        activeMatches: state.activeMatches,
+        nextMatch: state.nextMatch,
+        secondQueue: state.secondQueue,
+        history: state.history,
+        matchCounter: state.matchCounter
       };
-      const serialized = JSON.stringify(snapshot);
-      sessionState.undoStack = [...(sessionState.undoStack || []), serialized];
-      // 上限 30 步
-      while (sessionState.undoStack.length > 30) {
-        sessionState.undoStack.shift();
+      state.undoStack = [...(state.undoStack || []), JSON.stringify(snapshot)];
+      while (state.undoStack.length > 30) {
+        state.undoStack.shift();
       }
     }
 
-    window.handleUndo = function() {
-      if (!sessionState.undoStack || sessionState.undoStack.length === 0) return;
+    function handleUndo() {
+      if (!state.undoStack || state.undoStack.length === 0) return;
       cancelSwap();
-      const raw = sessionState.undoStack.pop();
+      const raw = state.undoStack.pop();
       try {
         const snap = JSON.parse(raw);
-        if (Array.isArray(snap.rosterPlayers)) {
-          rosterState.players = snap.rosterPlayers;
-          saveRosterToCloud();
-        }
-        sessionState.attendance = snap.attendance || {};
-        sessionState.activeMatches = snap.activeMatches || [];
-        sessionState.nextMatch = snap.nextMatch || null;
-        sessionState.secondQueue = snap.secondQueue || [];
-        sessionState.matchHistory = snap.matchHistory || [];
-        sessionState.matchCounter = snap.matchCounter || 1;
-        saveSessionToCloud();
+        state.roster = snap.roster || [];
+        state.attendance = snap.attendance || {};
+        state.activeMatches = snap.activeMatches || [];
+        state.nextMatch = snap.nextMatch || null;
+        state.secondQueue = snap.secondQueue || [];
+        state.history = snap.history || [];
+        state.matchCounter = snap.matchCounter || 1;
+        saveState();
         showToast(`已回復上一步（原動作：${snap.label || '系統操作'}）`, 'info');
       } catch (e) {
-        console.error('Undo parse error:', e);
-        showToast('回復失敗：快照資料異常', 'error');
+        showToast('回復失敗：快照異常', 'error');
       }
-    };
+    }
 
     // =========================================================================
-    // 5. 智慧排點與 2v2 實力／性別平衡演算法
+    // 3. 1–18 級標籤與輔助函式
     // =========================================================================
+    function getPlayerById(id) {
+      return state.roster.find(p => p.id === id) || null;
+    }
 
-    // 取得目前「正在場上且尚未點選下場」的球員 ID 集合
-    function getOnCourtActiveIds() {
+    function getLevelMeta(level) {
+      const lv = Number(level) || 1;
+      if (lv <= 3)  return { label: '新手', cls: 'bg-slate-100 text-slate-700 border-slate-300' };
+      if (lv <= 6)  return { label: '初階', cls: 'bg-emerald-100 text-emerald-800 border-emerald-300' };
+      if (lv <= 9)  return { label: '中階', cls: 'bg-amber-100 text-amber-900 border-amber-300' };
+      if (lv <= 12) return { label: '中上', cls: 'bg-rose-100 text-rose-800 border-rose-300' };
+      if (lv <= 15) return { label: '高階', cls: 'bg-purple-100 text-purple-800 border-purple-300' };
+      return { label: '甲組', cls: 'bg-slate-900 text-amber-300 border-amber-500' };
+    }
+
+    function getLevelBadgeHTML(level, compact = false) {
+      const meta = getLevelMeta(level);
+      return `<span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-extrabold border ${meta.cls}">Lv.${level}${compact ? '' : ' ' + meta.label}</span>`;
+    }
+
+    function getGenderBadgeHTML(gender) {
+      return gender === 'F'
+        ? `<span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-rose-100 text-rose-600 text-xs font-black shrink-0">♀</span>`
+        : `<span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-blue-100 text-blue-600 text-xs font-black shrink-0">♂</span>`;
+    }
+
+    function formatTime(ts) {
+      if (!ts) return '--:--';
+      return new Date(ts).toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit', hour12: false });
+    }
+
+    function escapeHTML(str) {
+      return String(str || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    // =========================================================================
+    // 4. 智慧排點與 2v2 實力／性別平衡演算法
+    // =========================================================================
+    function getOnCourtIds() {
       const set = new Set();
-      for (const m of sessionState.activeMatches) {
-        for (const s of [...m.teamA, ...m.teamB]) {
-          if (!s.isOff) set.add(s.playerId);
-        }
+      for (const m of state.activeMatches) {
+        m.teamA.forEach(id => set.add(id));
+        m.teamB.forEach(id => set.add(id));
       }
       return set;
     }
 
-    // 取得目前「有資格排點」的場下等待人員（已出席、未暫休、未在場上打球）
     function getEligibleWaitingPlayers() {
-      const onCourt = getOnCourtActiveIds();
+      const onCourt = getOnCourtIds();
       const list = [];
-      for (const [pid, info] of Object.entries(sessionState.attendance)) {
+      for (const [pid, info] of Object.entries(state.attendance)) {
         if (info.paused) continue;
         if (onCourt.has(pid)) continue;
         const p = getPlayerById(pid);
@@ -666,7 +606,7 @@
           joinedAt: info.joinedAt || 0
         });
       }
-      // 公平性排序：1. 上場次數最少 -> 2. 最後下場時間最早 -> 3. 加入時間最早
+      // 依序：上場次數最少 -> 最後下場時間最早 -> 加入時間最早
       list.sort((a, b) => {
         if (a.gamesPlayed !== b.gamesPlayed) return a.gamesPlayed - b.gamesPlayed;
         if (a.lastOffTime !== b.lastOffTime) return a.lastOffTime - b.lastOffTime;
@@ -675,7 +615,7 @@
       return list;
     }
 
-    // 計算 4 人的最佳 2v2 分隊（優先實力平衡，其次性別平衡）
+    // 4 人最佳 2v2 分隊：優先最小化 |(A+B) - (C+D)|，同分時優先性別平衡
     function computeBest2v2Split(players4) {
       const [p0, p1, p2, p3] = players4;
       const combos = [
@@ -683,7 +623,6 @@
         { teamA: [p0, p2], teamB: [p1, p3] },
         { teamA: [p0, p3], teamB: [p1, p2] }
       ];
-
       let best = combos[0];
       let bestScore = Infinity;
 
@@ -692,10 +631,9 @@
         const sumB = c.teamB[0].level + c.teamB[1].level;
         const levelDiff = Math.abs(sumA - sumB);
 
-        // 性別平衡加權：混雙對混雙 (0)、男雙對男雙 (0)、女雙對女雙 (0) 為最佳；男雙對女雙 (2) 盡量避免
         const mA = c.teamA.filter(p => p.gender === 'M').length;
         const mB = c.teamB.filter(p => p.gender === 'M').length;
-        const genderDiff = Math.abs(mA - mB); // 0, 1, or 2
+        const genderDiff = Math.abs(mA - mB);
 
         const score = levelDiff * 10 + genderDiff * 2;
         if (score < bestScore) {
@@ -703,7 +641,6 @@
           best = c;
         }
       }
-
       return {
         teamA: best.teamA.map(p => p.id),
         teamB: best.teamB.map(p => p.id),
@@ -714,114 +651,84 @@
       };
     }
 
-    // 從排序後的候選名單中，智慧挑選 4 人（兼顧公平性與避免極端實力斷層）
     function pickSmartFour(sortedEligible, randomize = false) {
       if (sortedEligible.length < 4) return null;
 
-      // 取得近期兩場的 4 人集合，用來降低連續同 4 人撞場機率
-      const recentGroups = sessionState.matchHistory.slice(0, 2).map(h =>
-        new Set([...h.teamA.map(x => x.id), ...h.teamB.map(x => x.id)])
-      );
-
-      // 若是「重新微調配對」，在前 6 名候選人中稍微加入隨機擾動
       let pool = [...sortedEligible];
       if (randomize && pool.length > 4) {
-        const topSlice = pool.slice(0, Math.min(7, pool.length));
-        // 保持第 1 位優先權最高，其餘微幅洗牌
-        const rest = topSlice.slice(1).sort(() => Math.random() - 0.5);
-        pool = [topSlice[0], ...rest, ...pool.slice(topSlice.length)];
+        const top = pool.slice(0, Math.min(7, pool.length));
+        const rest = top.slice(1).sort(() => Math.random() - 0.5);
+        pool = [top[0], ...rest, ...pool.slice(top.length)];
       }
 
-      // 強制納入優先權最高的前 2 人（確保等最久的人不會被跳過）
       const anchors = [pool[0], pool[1]];
-      // 從接下來的最多 5 人當中挑選最適合的 2 人搭配
       const candidates = pool.slice(2, Math.min(7, pool.length));
-
       let bestGroup = [pool[0], pool[1], pool[2], pool[3]];
-      let bestTotalPenalty = Infinity;
+      let bestPenalty = Infinity;
 
       for (let i = 0; i < candidates.length; i++) {
         for (let j = i + 1; j < candidates.length; j++) {
           const group = [anchors[0], anchors[1], candidates[i], candidates[j]];
           const levels = group.map(p => p.level);
           const spread = Math.max(...levels) - Math.min(...levels);
-
-          // 1. 優先順位懲罰（越靠後的人懲罰越高，維持公平排隊）
-          const rankPenalty = (i + j) * 2.5;
-          // 2. 避免極端級數斷層（差距超過 5 級開始大幅加權）
-          const gapPenalty = spread > 5 ? (spread - 5) * 6 : spread * 0.8;
-          // 3. 2v2 分隊落差懲罰
           const split = computeBest2v2Split(group);
-          const splitPenalty = split.levelDiff * 4;
-          // 4. 避免與近期場次完全相同 4 人
-          let repeatPenalty = 0;
-          for (const rg of recentGroups) {
-            const overlap = group.filter(p => rg.has(p.id)).length;
-            if (overlap === 4) repeatPenalty += 25;
-            else if (overlap === 3) repeatPenalty += 6;
-          }
 
-          const totalPenalty = rankPenalty + gapPenalty + splitPenalty + repeatPenalty;
-          if (totalPenalty < bestTotalPenalty) {
-            bestTotalPenalty = totalPenalty;
+          const rankPenalty = (i + j) * 2.5;
+          const gapPenalty = spread > 5 ? (spread - 5) * 5 : spread * 0.6;
+          const splitPenalty = split.levelDiff * 4;
+
+          const total = rankPenalty + gapPenalty + splitPenalty;
+          if (total < bestPenalty) {
+            bestPenalty = total;
             bestGroup = group;
           }
         }
       }
-
       return computeBest2v2Split(bestGroup);
     }
 
-    // 同步並維護「下一組上場」與「再下一組預備」佇列
-    function syncQueues(forceRecomputeNext = false, randomize = false) {
+    function syncQueues(forceRecompute = false, randomize = false) {
       const eligible = getEligibleWaitingPlayers();
       const eligibleSet = new Set(eligible.map(p => p.id));
 
-      // 1. 檢查現有 nextMatch 是否仍然有效（4 人皆在合格等待池內）
+      // 1. 驗證或建立 nextMatch
       let validNext = false;
-      if (!forceRecomputeNext && sessionState.nextMatch) {
-        const ids = [...sessionState.nextMatch.teamA, ...sessionState.nextMatch.teamB];
-        const unique = new Set(ids);
-        if (ids.length === 4 && unique.size === 4 && ids.every(id => eligibleSet.has(id))) {
+      if (!forceRecompute && state.nextMatch) {
+        const ids = [...state.nextMatch.teamA, ...state.nextMatch.teamB];
+        if (ids.length === 4 && new Set(ids).size === 4 && ids.every(id => eligibleSet.has(id))) {
           validNext = true;
         }
       }
 
       if (!validNext) {
         if (eligible.length >= 4) {
-          // 若原本有預備的 secondQueue 且未強制重排，優先將 secondQueue 遞補進來
-          if (!forceRecomputeNext && sessionState.secondQueue && sessionState.secondQueue.length > 0) {
-            const validSecond = sessionState.secondQueue.filter(id => eligibleSet.has(id));
-            if (validSecond.length === 4) {
-              const p4 = validSecond.map(id => eligible.find(p => p.id === id)).filter(Boolean);
-              if (p4.length === 4) {
-                const split = computeBest2v2Split(p4);
-                sessionState.nextMatch = { teamA: split.teamA, teamB: split.teamB };
-                validNext = true;
-              }
+          // 若原本預備組已滿 4 人且未強制重排，優先遞補
+          if (!forceRecompute && state.secondQueue.length === 4 && state.secondQueue.every(id => eligibleSet.has(id))) {
+            const p4 = state.secondQueue.map(id => eligible.find(p => p.id === id)).filter(Boolean);
+            if (p4.length === 4) {
+              const split = computeBest2v2Split(p4);
+              state.nextMatch = { teamA: split.teamA, teamB: split.teamB };
+              validNext = true;
             }
           }
           if (!validNext) {
             const picked = pickSmartFour(eligible, randomize);
-            sessionState.nextMatch = picked ? { teamA: picked.teamA, teamB: picked.teamB } : null;
+            state.nextMatch = picked ? { teamA: picked.teamA, teamB: picked.teamB } : null;
           }
         } else {
-          sessionState.nextMatch = null;
+          state.nextMatch = null;
         }
       }
 
-      // 2. 計算再下一組預備（排除已在 nextMatch 的 4 人，最多取 4 人）
+      // 2. 更新 secondQueue（排除已在 nextMatch 的 4 人，最多 4 人）
       const usedInNext = new Set(
-        sessionState.nextMatch
-          ? [...sessionState.nextMatch.teamA, ...sessionState.nextMatch.teamB]
-          : []
+        state.nextMatch ? [...state.nextMatch.teamA, ...state.nextMatch.teamB] : []
       );
       const remaining = eligible.filter(p => !usedInNext.has(p.id));
 
-      // 保留原本已在 secondQueue 且仍有效的順序，再由排序靠前的剩餘人員補齊至最多 4 人
-      const keptSecond = forceRecomputeNext
+      const keptSecond = forceRecompute
         ? []
-        : (sessionState.secondQueue || []).filter(id => eligibleSet.has(id) && !usedInNext.has(id));
+        : (state.secondQueue || []).filter(id => eligibleSet.has(id) && !usedInNext.has(id));
       const keptSet = new Set(keptSecond);
 
       for (const p of remaining) {
@@ -831,406 +738,150 @@
           keptSet.add(p.id);
         }
       }
-      sessionState.secondQueue = keptSecond.slice(0, 4);
+      state.secondQueue = keptSecond.slice(0, 4);
     }
 
     // =========================================================================
-    // 6. 核心操作事件（下場、結算、上場、換人、暫休）
+    // 5. 核心操作：這組上場、一鍵下場（4人結束）、重新配對、互換、暫休
     // =========================================================================
-
-    // 送出「下一組上場」開始打球
-    window.handleStartNextMatch = function() {
-      if (!sessionState.nextMatch) return;
-      const ids = [...sessionState.nextMatch.teamA, ...sessionState.nextMatch.teamB];
-      if (ids.length !== 4) return;
-
+    function handleStartNextMatch() {
+      if (!state.nextMatch) return;
       cancelSwap();
-      pushUndoSnapshot(`第 ${sessionState.matchCounter} 場上場開打`);
+      pushUndo(`第 ${state.matchCounter} 組上場`);
 
-      const newMatch = {
+      const seq = state.matchCounter;
+      state.activeMatches.push({
         id: 'match_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
-        seq: sessionState.matchCounter,
+        seq,
         startTime: Date.now(),
-        teamA: sessionState.nextMatch.teamA.map(pid => ({ playerId: pid, isOff: false })),
-        teamB: sessionState.nextMatch.teamB.map(pid => ({ playerId: pid, isOff: false }))
-      };
-
-      sessionState.activeMatches.push(newMatch);
-      sessionState.matchCounter += 1;
-      sessionState.nextMatch = null; // 清空以便讓預備區遞補
+        teamA: [...state.nextMatch.teamA],
+        teamB: [...state.nextMatch.teamB]
+      });
+      state.matchCounter += 1;
+      state.nextMatch = null;
 
       syncQueues(false);
-      saveSessionToCloud();
-      showToast(`第 ${newMatch.seq} 場已上場開打！`, 'success');
-    };
+      saveState();
+      showToast(`進行中組別 #${seq} 已上場！`, 'success');
+    }
 
-    // 個人點選「點我下場」（或再次點擊取消誤觸）
-    window.handleTogglePlayerOff = function(matchId, playerId) {
-      const matchIndex = sessionState.activeMatches.findIndex(m => m.id === matchId);
-      if (matchIndex === -1) return;
-
-      const match = sessionState.activeMatches[matchIndex];
-      const slot = [...match.teamA, ...match.teamB].find(s => s.playerId === playerId);
-      if (!slot) return;
-
-      const player = getPlayerById(playerId);
-      const pName = player ? player.name : '球友';
+    // 一鍵下場（4人同時結束）
+    function handleEndMatch(matchId) {
+      const idx = state.activeMatches.findIndex(m => m.id === matchId);
+      if (idx === -1) return;
+      const match = state.activeMatches[idx];
 
       cancelSwap();
-      pushUndoSnapshot(slot.isOff ? `${pName} 取消下場` : `${pName} 點選已下場`);
-
-      slot.isOff = !slot.isOff;
-
-      if (slot.isOff) {
-        // 立刻記錄最後下場時間，使其立即進入等待池參與下一組計算
-        if (sessionState.attendance[playerId]) {
-          sessionState.attendance[playerId].lastOffTime = Date.now();
-        }
-      }
-
-      // 檢查該場是否 4 人皆已點選下場 -> 自動結算！
-      const allOff = [...match.teamA, ...match.teamB].every(s => s.isOff);
-      if (allOff) {
-        settleMatchInternal(matchIndex);
-        syncQueues(false);
-        saveSessionToCloud();
-        showToast(`第 ${match.seq} 場 4 人皆已下場，自動結算並寫入紀錄！`, 'success');
-      } else {
-        // 只要有人下場，就更新佇列（例如讓預備組從 3+1 補齊為 4 人）
-        syncQueues(false);
-        saveSessionToCloud();
-        if (slot.isOff) {
-          showToast(`${pName} 已標記下場，進入等待排點`, 'info');
-        }
-      }
-    };
-
-    // 一鍵「整組結束」防呆輔助鍵
-    window.handleFinishWholeMatch = function(matchId) {
-      const matchIndex = sessionState.activeMatches.findIndex(m => m.id === matchId);
-      if (matchIndex === -1) return;
-      const match = sessionState.activeMatches[matchIndex];
-
-      cancelSwap();
-      pushUndoSnapshot(`第 ${match.seq} 場整組結束`);
+      pushUndo(`組別 #${match.seq} 一鍵下場`);
 
       const now = Date.now();
-      for (const s of [...match.teamA, ...match.teamB]) {
-        if (!s.isOff) {
-          s.isOff = true;
-          if (sessionState.attendance[s.playerId]) {
-            sessionState.attendance[s.playerId].lastOffTime = now;
-          }
+      const mapTeam = (ids) => ids.map(pid => {
+        if (state.attendance[pid]) {
+          state.attendance[pid].gamesPlayed = (state.attendance[pid].gamesPlayed || 0) + 1;
+          state.attendance[pid].lastOffTime = now;
         }
-      }
-
-      settleMatchInternal(matchIndex);
-      syncQueues(false);
-      saveSessionToCloud();
-      showToast(`第 ${match.seq} 場已整組結算並歸檔！`, 'success');
-    };
-
-    // 內部函式：結算單一場次（+1 場次、寫入歷史紀錄、移除場上卡片）
-    function settleMatchInternal(matchIndex) {
-      const match = sessionState.activeMatches[matchIndex];
-      const now = Date.now();
-
-      const mapSnap = (slots) => slots.map(s => {
-        if (sessionState.attendance[s.playerId]) {
-          sessionState.attendance[s.playerId].gamesPlayed =
-            (sessionState.attendance[s.playerId].gamesPlayed || 0) + 1;
-          if (!sessionState.attendance[s.playerId].lastOffTime) {
-            sessionState.attendance[s.playerId].lastOffTime = now;
-          }
-        }
-        const p = getPlayerById(s.playerId);
+        const p = getPlayerById(pid);
         return p
           ? { id: p.id, name: p.name, level: p.level, gender: p.gender }
-          : { id: s.playerId, name: '已刪除球友', level: 1, gender: 'M' };
+          : { id: pid, name: '已刪除球友', level: 1, gender: 'M' };
       });
 
-      const historyEntry = {
+      const entry = {
         id: match.id,
         seq: match.seq,
         startTime: match.startTime,
         endTime: now,
-        teamA: mapSnap(match.teamA),
-        teamB: mapSnap(match.teamB)
+        teamA: mapTeam(match.teamA),
+        teamB: mapTeam(match.teamB)
       };
 
-      sessionState.matchHistory = [historyEntry, ...(sessionState.matchHistory || [])];
-      sessionState.activeMatches.splice(matchIndex, 1);
-    }
-
-    // 重新微調配對
-    window.handleShuffleNextMatch = function() {
-      const eligible = getEligibleWaitingPlayers();
-      if (eligible.length < 4) {
-        showToast('場下可用人數不足 4 人，無法微調配對', 'warning');
-        return;
-      }
-      cancelSwap();
-      pushUndoSnapshot('重新微調下一組配對');
-      syncQueues(true, true);
-      saveSessionToCloud();
-      showToast('已重新微調下一組對戰配對', 'info');
-    };
-
-    // 切換球友「暫休 / 回歸」
-    window.handleTogglePause = function(playerId, event) {
-      if (event) event.stopPropagation();
-      const att = sessionState.attendance[playerId];
-      if (!att) return;
-
-      const onCourt = getOnCourtActiveIds();
-      if (onCourt.has(playerId)) {
-        showToast('該球友正在場上，請先點選下場再切換暫休', 'warning');
-        return;
-      }
-
-      const p = getPlayerById(playerId);
-      const pName = p ? p.name : '球友';
-
-      cancelSwap();
-      pushUndoSnapshot(att.paused ? `${pName} 回歸排點` : `${pName} 切換暫休`);
-      att.paused = !att.paused;
+      state.history = [entry, ...(state.history || [])];
+      state.activeMatches.splice(idx, 1);
 
       syncQueues(false);
-      saveSessionToCloud();
-      showToast(att.paused ? `${pName} 已設為暫休（不參與排點）` : `${pName} 已回歸排點佇列`, 'info');
-    };
+      saveState();
+      showToast(`組別 #${match.seq} 已結束，4 人已回到等待區並寫入紀錄！`, 'success');
+    }
 
-    // =========================================================================
-    // 7. 手動點擊兩位球員互換位置
-    // =========================================================================
-    window.handleSelectForSwap = function(playerId, area, index) {
+    function handleReshuffleNext() {
+      const eligible = getEligibleWaitingPlayers();
+      if (eligible.length < 4) {
+        showToast('場下可用人數不足 4 人，無法重新配對', 'warning');
+        return;
+      }
+      cancelSwap();
+      pushUndo('重新配對下一組');
+      syncQueues(true, true);
+      saveState();
+      showToast('已重新配對下一組對戰組合', 'info');
+    }
+
+    function handleTogglePause(playerId, event) {
+      if (event) event.stopPropagation();
+      const att = state.attendance[playerId];
+      if (!att) return;
+      if (getOnCourtIds().has(playerId)) {
+        showToast('該球友正在場上，請先結束該場次再切換暫休', 'warning');
+        return;
+      }
+      const p = getPlayerById(playerId);
+      cancelSwap();
+      pushUndo(att.paused ? `${p?.name || '球友'} 回歸排點` : `${p?.name || '球友'} 暫休`);
+      att.paused = !att.paused;
+      syncQueues(false);
+      saveState();
+      showToast(att.paused ? `${p?.name} 已設為暫休` : `${p?.name} 已回歸排點`, 'info');
+    }
+
+    // 手動點擊互換位置
+    function handleSelectForSwap(playerId) {
       const p = getPlayerById(playerId);
       if (!p) return;
 
-      // 若尚未選取第一位
-      if (!swapSource) {
-        swapSource = { playerId, area, index };
+      if (!swapSourceId) {
+        swapSourceId = playerId;
         document.getElementById('swap-selected-name').textContent = p.name;
         document.getElementById('swap-banner').classList.remove('hidden');
         renderMainView();
         return;
       }
 
-      // 若重複點擊同一位 -> 取消選取
-      if (swapSource.playerId === playerId) {
+      if (swapSourceId === playerId) {
         cancelSwap();
         return;
       }
 
-      // 執行互換
-      const p1 = getPlayerById(swapSource.playerId);
-      const p2 = p;
-      pushUndoSnapshot(`手動互換：${p1 ? p1.name : ''} ↔ ${p2.name}`);
+      const p1 = getPlayerById(swapSourceId);
+      pushUndo(`互換位置：${p1?.name || ''} ↔ ${p.name}`);
 
-      const src = swapSource;
-      const dst = { playerId, area, index };
+      const idA = swapSourceId;
+      const idB = playerId;
+      const swapInArr = (arr) => arr.map(id => id === idA ? '__TMP__' : id)
+                                    .map(id => id === idB ? idA : id)
+                                    .map(id => id === '__TMP__' ? idB : id);
 
-      // 將兩者的位置寫入對應的佇列結構
-      const replaceIdInQueues = (fromId, toId) => {
-        if (sessionState.nextMatch) {
-          sessionState.nextMatch.teamA = sessionState.nextMatch.teamA.map(id => id === fromId ? '__TMP__' : id);
-          sessionState.nextMatch.teamB = sessionState.nextMatch.teamB.map(id => id === fromId ? '__TMP__' : id);
-        }
-        sessionState.secondQueue = sessionState.secondQueue.map(id => id === fromId ? '__TMP__' : id);
+      if (state.nextMatch) {
+        state.nextMatch.teamA = swapInArr(state.nextMatch.teamA);
+        state.nextMatch.teamB = swapInArr(state.nextMatch.teamB);
+      }
+      state.secondQueue = swapInArr(state.secondQueue);
 
-        if (sessionState.nextMatch) {
-          sessionState.nextMatch.teamA = sessionState.nextMatch.teamA.map(id => id === toId ? fromId : id);
-          sessionState.nextMatch.teamB = sessionState.nextMatch.teamB.map(id => id === toId ? fromId : id);
-        }
-        sessionState.secondQueue = sessionState.secondQueue.map(id => id === toId ? fromId : id);
-
-        if (sessionState.nextMatch) {
-          sessionState.nextMatch.teamA = sessionState.nextMatch.teamA.map(id => id === '__TMP__' ? toId : id);
-          sessionState.nextMatch.teamB = sessionState.nextMatch.teamB.map(id => id === '__TMP__' ? toId : id);
-        }
-        sessionState.secondQueue = sessionState.secondQueue.map(id => id === '__TMP__' ? toId : id);
-      };
-
-      replaceIdInQueues(src.playerId, dst.playerId);
       cancelSwap();
-      saveSessionToCloud();
-      showToast(`已互換位置：${p1 ? p1.name : ''} ↔ ${p2.name}`, 'success');
-    };
+      saveState();
+      showToast(`已互換位置：${p1?.name || ''} ↔ ${p.name}`, 'success');
+    }
 
-    window.cancelSwap = function() {
-      swapSource = null;
-      document.getElementById('swap-banner').classList.add('hidden');
-      renderMainView();
-    };
+    function cancelSwap() {
+      swapSourceId = null;
+      const banner = document.getElementById('swap-banner');
+      if (banner) banner.classList.add('hidden');
+      if (activeTab === 'main') renderMainView();
+    }
 
     // =========================================================================
-    // 8. 永久名冊管理 & 今日出席 & 範例球友 & JSON 備份
+    // 6. 名冊管理、15 位範例球友、JSON 匯出匯入與手動清除
     // =========================================================================
-    window.openPlayerModal = function(playerId = null) {
-      const modal = document.getElementById('player-modal');
-      const title = document.getElementById('player-modal-title');
-      const idInput = document.getElementById('edit-player-id');
-      const nameInput = document.getElementById('input-player-name');
-      const levelInput = document.getElementById('input-player-level');
-      const checkinRow = document.getElementById('modal-checkin-row');
-
-      if (playerId) {
-        const p = getPlayerById(playerId);
-        if (!p) return;
-        title.textContent = '編輯球友資料';
-        idInput.value = p.id;
-        nameInput.value = p.name;
-        levelInput.value = p.level;
-        document.querySelector(`input[name="gender"][value="${p.gender}"]`).checked = true;
-        checkinRow.classList.add('hidden');
-        updateModalLevelPreview(p.level);
-      } else {
-        title.textContent = '新增球友／臨打';
-        idInput.value = '';
-        nameInput.value = '';
-        levelInput.value = 7;
-        document.querySelector('input[name="gender"][value="M"]').checked = true;
-        document.getElementById('input-player-checkin').checked = true;
-        checkinRow.classList.remove('hidden');
-        updateModalLevelPreview(7);
-      }
-
-      modal.classList.remove('hidden');
-      setTimeout(() => nameInput.focus(), 50);
-    };
-
-    window.closePlayerModal = function() {
-      document.getElementById('player-modal').classList.add('hidden');
-    };
-
-    window.updateModalLevelPreview = function(val) {
-      const preview = document.getElementById('modal-level-preview');
-      const meta = getLevelMeta(val);
-      preview.className = `px-2.5 py-0.5 rounded-lg text-xs font-extrabold border ${meta.cls}`;
-      preview.textContent = `Lv.${val} ${meta.label}`;
-    };
-
-    window.handleSavePlayer = function(e) {
-      e.preventDefault();
-      const id = document.getElementById('edit-player-id').value;
-      const name = document.getElementById('input-player-name').value.trim();
-      const level = Number(document.getElementById('input-player-level').value);
-      const gender = document.querySelector('input[name="gender"]:checked').value;
-      const autoCheckin = document.getElementById('input-player-checkin').checked;
-
-      if (!name) return;
-
-      if (id) {
-        const p = getPlayerById(id);
-        if (p) {
-          pushUndoSnapshot(`編輯球友：${p.name}`);
-          p.name = name;
-          p.level = level;
-          p.gender = gender;
-        }
-        saveRosterToCloud();
-        saveSessionToCloud();
-        showToast(`已更新球友「${name}」資料`, 'success');
-      } else {
-        pushUndoSnapshot(`新增球友：${name}`);
-        const newId = 'p_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
-        rosterState.players.push({
-          id: newId,
-          name,
-          level,
-          gender,
-          createdAt: Date.now()
-        });
-        if (autoCheckin) {
-          sessionState.attendance[newId] = {
-            gamesPlayed: 0,
-            lastOffTime: 0,
-            paused: false,
-            joinedAt: Date.now()
-          };
-          syncQueues(false);
-        }
-        saveRosterToCloud();
-        saveSessionToCloud();
-        showToast(`已新增球友「${name}」`, 'success');
-      }
-      closePlayerModal();
-    };
-
-    window.confirmDeletePlayer = function(playerId) {
-      const p = getPlayerById(playerId);
-      if (!p) return;
-      const onCourt = getOnCourtActiveIds();
-      if (onCourt.has(playerId)) {
-        showToast('該球友目前正在場上，請先點選下場後再刪除', 'warning');
-        return;
-      }
-
-      openConfirmModal(
-        '刪除永久名冊球友',
-        `確定要從永久名冊中刪除「${p.name}」嗎？此操作也會將他移出今日出席名單。`,
-        () => {
-          pushUndoSnapshot(`刪除球友：${p.name}`);
-          rosterState.players = rosterState.players.filter(x => x.id !== playerId);
-          if (sessionState.attendance[playerId]) {
-            delete sessionState.attendance[playerId];
-            syncQueues(false);
-          }
-          saveRosterToCloud();
-          saveSessionToCloud();
-          showToast(`已刪除球友「${p.name}」`, 'info');
-        }
-      );
-    };
-
-    // 勾選 / 取消今日出席
-    window.toggleAttendance = function(playerId) {
-      const p = getPlayerById(playerId);
-      if (!p) return;
-
-      const isPresent = Boolean(sessionState.attendance[playerId]);
-      if (isPresent) {
-        const onCourt = getOnCourtActiveIds();
-        if (onCourt.has(playerId)) {
-          showToast(`「${p.name}」目前正在場上，請先點選下場再取消出席`, 'warning');
-          return;
-        }
-        pushUndoSnapshot(`移出今日出席：${p.name}`);
-        delete sessionState.attendance[playerId];
-      } else {
-        pushUndoSnapshot(`加入今日出席：${p.name}`);
-        sessionState.attendance[playerId] = {
-          gamesPlayed: 0,
-          lastOffTime: 0,
-          paused: false,
-          joinedAt: Date.now()
-        };
-      }
-      syncQueues(false);
-      saveSessionToCloud();
-    };
-
-    window.toggleSelectAllAttendance = function(checkAll) {
-      if (rosterState.players.length === 0) return;
-      pushUndoSnapshot('全選今日出席');
-      const now = Date.now();
-      rosterState.players.forEach((p, idx) => {
-        if (checkAll && !sessionState.attendance[p.id]) {
-          sessionState.attendance[p.id] = {
-            gamesPlayed: 0,
-            lastOffTime: 0,
-            paused: false,
-            joinedAt: now + idx
-          };
-        }
-      });
-      syncQueues(false);
-      saveSessionToCloud();
-      showToast('已將總名冊所有球友加入今日出席', 'success');
-    };
-
-    // 一鍵匯入 15 位範例球友
-    window.importSample15Players = function() {
+    function importSample15Players() {
       const samples = [
         { name: '阿明', level: 11, gender: 'M' },
         { name: '小美', level: 8,  gender: 'F' },
@@ -1249,25 +900,22 @@
         { name: '家豪', level: 7,  gender: 'M' }
       ];
 
-      pushUndoSnapshot('匯入 15 位範例球友');
+      pushUndo('一鍵建立 15 位範例球友');
       const now = Date.now();
-      let addedCount = 0;
 
       samples.forEach((s, idx) => {
-        let existing = rosterState.players.find(p => p.name === s.name);
+        let existing = state.roster.find(p => p.name === s.name);
         if (!existing) {
           existing = {
             id: 'sample_' + now + '_' + idx,
             name: s.name,
             level: s.level,
-            gender: s.gender,
-            createdAt: now + idx
+            gender: s.gender
           };
-          rosterState.players.push(existing);
-          addedCount++;
+          state.roster.push(existing);
         }
-        if (!sessionState.attendance[existing.id]) {
-          sessionState.attendance[existing.id] = {
+        if (!state.attendance[existing.id]) {
+          state.attendance[existing.id] = {
             gamesPlayed: 0,
             lastOffTime: 0,
             paused: false,
@@ -1277,75 +925,201 @@
       });
 
       syncQueues(false);
-      saveRosterToCloud();
-      saveSessionToCloud();
+      saveState();
       switchTab('main');
-      showToast(`已載入 15 位範例球友並加入今日排點！`, 'success');
-    };
+      showToast('已建立 15 位範例球友並加入今日出席！', 'success');
+    }
 
-    // 重設今日場次（保留永久名冊）
-    window.confirmResetToday = function() {
+    function openPlayerModal(playerId = null) {
+      const modal = document.getElementById('player-modal');
+      const title = document.getElementById('player-modal-title');
+      const idInput = document.getElementById('edit-player-id');
+      const nameInput = document.getElementById('input-player-name');
+      const levelInput = document.getElementById('input-player-level');
+      const checkinRow = document.getElementById('modal-checkin-row');
+
+      if (playerId) {
+        const p = getPlayerById(playerId);
+        if (!p) return;
+        title.textContent = '編輯球友資料';
+        idInput.value = p.id;
+        nameInput.value = p.name;
+        levelInput.value = p.level;
+        document.querySelector(`input[name="gender"][value="${p.gender}"]`).checked = true;
+        checkinRow.classList.add('hidden');
+        updateModalLevelPreview(p.level);
+      } else {
+        title.textContent = '新增球友';
+        idInput.value = '';
+        nameInput.value = '';
+        levelInput.value = 7;
+        document.querySelector('input[name="gender"][value="M"]').checked = true;
+        document.getElementById('input-player-checkin').checked = true;
+        checkinRow.classList.remove('hidden');
+        updateModalLevelPreview(7);
+      }
+      modal.classList.remove('hidden');
+      setTimeout(() => nameInput.focus(), 50);
+    }
+
+    function closePlayerModal() {
+      document.getElementById('player-modal').classList.add('hidden');
+    }
+
+    function updateModalLevelPreview(val) {
+      const preview = document.getElementById('modal-level-preview');
+      const meta = getLevelMeta(val);
+      preview.className = `px-2.5 py-0.5 rounded-lg text-xs font-extrabold border ${meta.cls}`;
+      preview.textContent = `Lv.${val} ${meta.label}`;
+    }
+
+    function handleSavePlayer(e) {
+      e.preventDefault();
+      const id = document.getElementById('edit-player-id').value;
+      const name = document.getElementById('input-player-name').value.trim();
+      const level = Number(document.getElementById('input-player-level').value);
+      const gender = document.querySelector('input[name="gender"]:checked').value;
+      const autoCheckin = document.getElementById('input-player-checkin').checked;
+      if (!name) return;
+
+      if (id) {
+        const p = getPlayerById(id);
+        if (p) {
+          pushUndo(`編輯球友：${p.name}`);
+          p.name = name;
+          p.level = level;
+          p.gender = gender;
+        }
+        saveState();
+        showToast(`已更新「${name}」資料`, 'success');
+      } else {
+        pushUndo(`新增球友：${name}`);
+        const newId = 'p_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
+        state.roster.push({ id: newId, name, level, gender });
+        if (autoCheckin) {
+          state.attendance[newId] = {
+            gamesPlayed: 0,
+            lastOffTime: 0,
+            paused: false,
+            joinedAt: Date.now()
+          };
+          syncQueues(false);
+        }
+        saveState();
+        showToast(`已新增球友「${name}」`, 'success');
+      }
+      closePlayerModal();
+    }
+
+    function toggleAttendance(playerId) {
+      const p = getPlayerById(playerId);
+      if (!p) return;
+      if (state.attendance[playerId]) {
+        if (getOnCourtIds().has(playerId)) {
+          showToast(`「${p.name}」正在場上，請先結束該場次再取消出席`, 'warning');
+          return;
+        }
+        pushUndo(`取消出席：${p.name}`);
+        delete state.attendance[playerId];
+      } else {
+        pushUndo(`加入出席：${p.name}`);
+        state.attendance[playerId] = {
+          gamesPlayed: 0,
+          lastOffTime: 0,
+          paused: false,
+          joinedAt: Date.now()
+        };
+      }
+      syncQueues(false);
+      saveState();
+    }
+
+    function toggleSelectAllAttendance(checkAll) {
+      if (state.roster.length === 0) return;
+      pushUndo('全選今日出席');
+      const now = Date.now();
+      state.roster.forEach((p, idx) => {
+        if (checkAll && !state.attendance[p.id]) {
+          state.attendance[p.id] = {
+            gamesPlayed: 0,
+            lastOffTime: 0,
+            paused: false,
+            joinedAt: now + idx
+          };
+        }
+      });
+      syncQueues(false);
+      saveState();
+      showToast('已將名冊所有球友加入今日出席', 'success');
+    }
+
+    function confirmDeletePlayer(playerId) {
+      const p = getPlayerById(playerId);
+      if (!p) return;
+      if (getOnCourtIds().has(playerId)) {
+        showToast('該球友正在場上，請先結束該場次再刪除', 'warning');
+        return;
+      }
       openConfirmModal(
-        '重設今日場次（保留球友名冊）',
-        '這將清空今日所有場上進行中的組別、場次紀錄並將今日上場次數歸零（永久名冊會完整保留，且可用「回復上一步」還原）。確定執行嗎？',
+        '刪除球友',
+        `確定要從名冊中刪除「${p.name}」嗎？此操作也會將他移出今日出席名單。`,
         () => {
-          pushUndoSnapshot('重設今日場次');
+          pushUndo(`刪除球友：${p.name}`);
+          state.roster = state.roster.filter(x => x.id !== playerId);
+          delete state.attendance[playerId];
+          syncQueues(false);
+          saveState();
+          showToast(`已刪除球友「${p.name}」`, 'info');
+        }
+      );
+    }
+
+    function confirmResetToday() {
+      openConfirmModal(
+        '🔄 重設今日場次（保留名冊）',
+        '這會清空今日場上組別與場次紀錄，並將上場次數歸零（球友名冊會完整保留，且可用「回復上一步」復原）。確定執行嗎？',
+        () => {
+          pushUndo('重設今日場次');
           const now = Date.now();
-          Object.keys(sessionState.attendance).forEach((pid, idx) => {
-            sessionState.attendance[pid] = {
+          Object.keys(state.attendance).forEach((pid, idx) => {
+            state.attendance[pid] = {
               gamesPlayed: 0,
               lastOffTime: 0,
               paused: false,
               joinedAt: now + idx
             };
           });
-          sessionState.activeMatches = [];
-          sessionState.nextMatch = null;
-          sessionState.secondQueue = [];
-          sessionState.matchHistory = [];
-          sessionState.matchCounter = 1;
+          state.activeMatches = [];
+          state.nextMatch = null;
+          state.secondQueue = [];
+          state.history = [];
+          state.matchCounter = 1;
           syncQueues(true);
-          saveSessionToCloud();
-          showToast('今日場次已重設，球友名冊已完整保留', 'info');
+          saveState();
+          showToast('今日場次已重設，球友名冊已保留', 'info');
         }
       );
-    };
+    }
 
-    // 完全清空所有資料（含本機 localStorage 與永久名冊）
-    window.confirmClearAllData = function() {
+    function confirmClearAllData() {
       openConfirmModal(
-        '⚠️ 完全清空所有資料',
-        '此動作會徹底清除瀏覽器內的所有紀錄，包含【永久球友名冊、今日出席、場上進度、歷史場次與回復紀錄】，且無法透過「回復上一步」復原！建議先匯出 JSON 備份。確定要完全清空嗎？',
+        '🗑️ 完全清空所有資料',
+        '這將徹底清除本機瀏覽器中的所有資料（含球友名冊、場次紀錄與復原堆疊），且無法復原！建議先匯出 JSON 備份。確定要完全清空嗎？',
         () => {
           try {
             localStorage.removeItem(STORAGE_KEY);
-          } catch (e) {
-            console.error('清除 localStorage 失敗：', e);
-          }
-          rosterState = { players: [], updatedAt: Date.now() };
-          sessionState = createEmptySession();
-          if (isCloudReady) {
-            saveRosterToCloud();
-            saveSessionToCloud();
-          } else {
-            renderAll();
-            setSyncStatus('local', '💾 本機自動存檔中（已清空）');
-          }
+          } catch (e) {}
+          state = createInitialState();
+          renderAll();
+          updateSaveIndicator();
           switchTab('main');
           showToast('已完全清空所有本機資料', 'warning');
         }
       );
-    };
+    }
 
-    // 匯出 JSON 備份
-    window.exportBackupJSON = function() {
-      const payload = {
-        exportedAt: new Date().toISOString(),
-        version: '1.0',
-        rosterState,
-        sessionState
-      };
-      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    function exportBackupJSON() {
+      const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -1353,42 +1127,33 @@
       a.click();
       URL.revokeObjectURL(url);
       showToast('已下載 JSON 備份檔案', 'success');
-    };
+    }
 
-    // 匯入 JSON 備份
-    window.importBackupJSON = function(event) {
+    function importBackupJSON(event) {
       const file = event.target.files[0];
       if (!file) return;
       const reader = new FileReader();
       reader.onload = (e) => {
         try {
-          const data = JSON.parse(e.target.result);
-          if (!data.rosterState || !Array.isArray(data.rosterState.players)) {
-            throw new Error('格式不符');
-          }
-          rosterState = data.rosterState;
-          if (data.sessionState) {
-            sessionState = {
-              ...createEmptySession(),
-              ...data.sessionState
-            };
-          }
-          saveRosterToCloud();
-          saveSessionToCloud();
-          showToast('已成功匯入 JSON 備份並同步至雲端！', 'success');
+          const parsed = JSON.parse(e.target.result);
+          if (!Array.isArray(parsed.roster)) throw new Error('格式不符');
+          state = { ...createInitialState(), ...parsed };
+          syncQueues(false);
+          saveState();
+          showToast('已成功匯入備份資料！', 'success');
         } catch (err) {
-          showToast('匯入失敗：請確認檔案為正確的系統備份 JSON', 'error');
+          showToast('匯入失敗：請確認檔案為正確的備份 JSON', 'error');
         } finally {
           event.target.value = '';
         }
       };
       reader.readAsText(file);
-    };
+    }
 
     // =========================================================================
-    // 9. UI 渲染引擎
+    // 7. 畫面渲染引擎
     // =========================================================================
-    window.switchTab = function(tab) {
+    function switchTab(tab) {
       activeTab = tab;
       cancelSwap();
       ['main', 'roster', 'history'].forEach(t => {
@@ -1403,15 +1168,13 @@
         }
       });
       renderAll();
-    };
+    }
 
     function renderAll() {
-      // 更新頂部數據與 Undo 按鈕
-      const attCount = Object.keys(sessionState.attendance).length;
-      document.getElementById('nav-attendance-count').textContent = attCount;
-      document.getElementById('nav-history-count').textContent = sessionState.matchHistory.length;
+      document.getElementById('nav-attending-count').textContent = Object.keys(state.attendance).length;
+      document.getElementById('nav-history-count').textContent = state.history.length;
 
-      const undoLen = (sessionState.undoStack || []).length;
+      const undoLen = (state.undoStack || []).length;
       document.getElementById('undo-count-badge').textContent = undoLen;
       document.getElementById('btn-undo').disabled = undoLen === 0;
 
@@ -1421,7 +1184,7 @@
     }
 
     function renderMainView() {
-      const attCount = Object.keys(sessionState.attendance).length;
+      const attCount = Object.keys(state.attendance).length;
       const emptyBanner = document.getElementById('empty-session-banner');
       const activeSec = document.getElementById('active-courts-section');
       const queueSec = document.getElementById('queue-section');
@@ -1446,131 +1209,104 @@
       renderWaitingPool();
     }
 
-    // 渲染：場上進行中卡片
+    // 渲染：場上進行中組別（每組只有一個「✅ 一鍵下場（4人結束）」大按鈕）
     function renderActiveMatches() {
       const grid = document.getElementById('active-matches-grid');
       const badge = document.getElementById('active-groups-badge');
-      const activeCount = sessionState.activeMatches.length;
-      const activePlayersCount = getOnCourtActiveIds().size;
+      const count = state.activeMatches.length;
+      badge.textContent = `${count} 組（${count * 4} 人）`;
 
-      badge.textContent = `${activeCount} 組（${activePlayersCount} 人在場上）`;
-
-      if (activeCount === 0) {
+      if (count === 0) {
         grid.innerHTML = `
           <div class="lg:col-span-2 bg-white rounded-3xl border-2 border-dashed border-slate-300 p-6 sm:p-8 text-center">
-            <p class="text-slate-500 font-bold text-base">目前場上無進行中的組別</p>
-            <p class="text-slate-400 text-xs sm:text-sm mt-1">請點擊下方「下一組上場」的【▶ 這組上場開打】按鈕即可開始</p>
+            <p class="text-slate-600 font-bold text-base">目前場上無進行中的組別</p>
+            <p class="text-slate-400 text-xs sm:text-sm mt-1">請點擊下方「下一組上場」的【🚀 這組上場】按鈕開始比賽</p>
           </div>
         `;
         return;
       }
 
-      grid.innerHTML = sessionState.activeMatches.map(match => {
-        const sumA = match.teamA.reduce((acc, s) => acc + (getPlayerById(s.playerId)?.level || 0), 0);
-        const sumB = match.teamB.reduce((acc, s) => acc + (getPlayerById(s.playerId)?.level || 0), 0);
-        const offCount = [...match.teamA, ...match.teamB].filter(s => s.isOff).length;
+      grid.innerHTML = state.activeMatches.map(match => {
+        const teamA = match.teamA.map(getPlayerById).filter(Boolean);
+        const teamB = match.teamB.map(getPlayerById).filter(Boolean);
+        const sumA = teamA.reduce((s, p) => s + p.level, 0);
+        const sumB = teamB.reduce((s, p) => s + p.level, 0);
 
-        const renderSlotBtn = (slot, teamColor) => {
-          const p = getPlayerById(slot.playerId);
-          if (!p) return '';
-          if (slot.isOff) {
-            return `
-              <button onclick="handleTogglePlayerOff('${match.id}', '${p.id}')"
-                class="w-full min-h-[76px] p-3 rounded-2xl border-2 border-dashed border-slate-300 bg-slate-100 text-slate-400
-                       flex items-center justify-between gap-2 transition-all active:scale-95 text-left">
-                <div>
-                  <div class="flex items-center gap-1.5">
-                    <span class="font-extrabold text-base line-through">${escapeHTML(p.name)}</span>
-                    <span class="text-xs font-bold">Lv.${p.level}</span>
-                  </div>
-                  <div class="text-xs font-bold text-emerald-600 mt-1">✓ 已下場（點此取消）</div>
-                </div>
-                <span class="w-8 h-8 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center font-black text-lg shrink-0">✓</span>
-              </button>
-            `;
-          }
-          return `
-            <button onclick="handleTogglePlayerOff('${match.id}', '${p.id}')"
-              class="w-full min-h-[76px] p-3 rounded-2xl border-2 ${teamColor} bg-white hover:bg-emerald-50/70
-                     flex items-center justify-between gap-2 shadow-sm transition-all active:scale-95 text-left group">
-              <div class="min-w-0">
-                <div class="flex items-center gap-1.5 flex-wrap">
-                  ${getGenderBadgeHTML(p.gender)}
-                  <span class="font-black text-base sm:text-lg text-slate-900 truncate">${escapeHTML(p.name)}</span>
-                </div>
-                <div class="mt-1.5 flex items-center gap-1.5">
-                  ${getLevelBadgeHTML(p.level, true)}
-                </div>
-              </div>
-              <div class="px-2.5 py-1.5 rounded-xl bg-emerald-600 group-hover:bg-emerald-700 text-white text-xs font-extrabold shrink-0 shadow-sm">
-                點我下場
-              </div>
-            </button>
-          `;
-        };
+        const renderPlayerRow = (p) => `
+          <div class="p-3 rounded-2xl bg-white border border-slate-200 flex items-center justify-between gap-2 shadow-sm">
+            <div class="flex items-center gap-2 min-w-0">
+              ${getGenderBadgeHTML(p.gender)}
+              <span class="font-extrabold text-base text-slate-900 truncate">${escapeHTML(p.name)}</span>
+            </div>
+            ${getLevelBadgeHTML(p.level, true)}
+          </div>
+        `;
 
         return `
-          <div class="bg-white rounded-3xl border-2 border-emerald-400 shadow-md overflow-hidden flex flex-col">
+          <div class="bg-white rounded-3xl border-2 border-emerald-400 shadow-md overflow-hidden flex flex-col justify-between">
             <!-- 卡片標頭 -->
             <div class="bg-emerald-600 text-white px-4 py-3 flex items-center justify-between gap-2">
               <div class="flex items-center gap-2.5">
-                <span class="px-2.5 py-0.5 rounded-lg bg-white/20 font-black text-sm">第 ${match.seq} 場</span>
+                <span class="px-2.5 py-0.5 rounded-lg bg-white/20 font-black text-sm">進行中組別 #${match.seq}</span>
                 <span class="text-xs sm:text-sm font-medium text-emerald-50">開打 ${formatTime(match.startTime)}</span>
-                ${offCount > 0 ? `<span class="px-2 py-0.5 rounded-full bg-amber-400 text-slate-900 text-xs font-black">${offCount}/4 已下場</span>` : ''}
               </div>
-              <button onclick="handleFinishWholeMatch('${match.id}')"
-                class="px-3 py-1.5 rounded-xl bg-white/15 hover:bg-white/25 border border-white/30 text-white text-xs font-extrabold active:scale-95 transition-all">
-                ✓ 整組結束
-              </button>
+              <span class="text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-700/80 text-emerald-100">
+                級數差 ${Math.abs(sumA - sumB)}
+              </span>
             </div>
 
-            <!-- 2v2 球場對戰區 -->
-            <div class="p-3.5 sm:p-4 bg-emerald-50/40 grid grid-cols-1 sm:grid-cols-2 gap-3 relative">
-              <!-- A 隊 -->
+            <!-- 2v2 名單 -->
+            <div class="p-4 bg-emerald-50/40 grid grid-cols-1 sm:grid-cols-2 gap-3 flex-1">
               <div class="space-y-2">
                 <div class="flex items-center justify-between px-1">
-                  <span class="text-xs font-extrabold text-emerald-800 uppercase tracking-wider">A 隊</span>
-                  <span class="text-xs font-bold text-slate-500">總級數 ${sumA}</span>
+                  <span class="text-xs font-extrabold text-emerald-800">A 隊</span>
+                  <span class="text-xs font-bold text-slate-500">級數和 ${sumA}</span>
                 </div>
-                ${match.teamA.map(s => renderSlotBtn(s, 'border-emerald-200')).join('')}
+                ${teamA.map(renderPlayerRow).join('')}
               </div>
+              <div class="space-y-2">
+                <div class="flex items-center justify-between px-1">
+                  <span class="text-xs font-extrabold text-teal-800">B 隊</span>
+                  <span class="text-xs font-bold text-slate-500">級數和 ${sumB}</span>
+                </div>
+                ${teamB.map(renderPlayerRow).join('')}
+              </div>
+            </div>
 
-              <!-- B 隊 -->
-              <div class="space-y-2">
-                <div class="flex items-center justify-between px-1">
-                  <span class="text-xs font-extrabold text-teal-800 uppercase tracking-wider">B 隊</span>
-                  <span class="text-xs font-bold text-slate-500">總級數 ${sumB}</span>
-                </div>
-                ${match.teamB.map(s => renderSlotBtn(s, 'border-teal-200')).join('')}
-              </div>
+            <!-- 底部一鍵下場大按鈕 -->
+            <div class="p-3.5 bg-white border-t border-slate-100">
+              <button onclick="handleEndMatch('${match.id}')"
+                class="w-full py-3.5 rounded-2xl bg-slate-900 hover:bg-emerald-700 text-white font-extrabold text-base shadow-md active:scale-[0.98] transition-all flex items-center justify-center gap-2">
+                ✅ 一鍵下場（4人結束）
+              </button>
             </div>
           </div>
         `;
       }).join('');
     }
 
-    // 渲染：下一組上場 (4人 2v2)
+    // 渲染：下一組上場（4人）
     function renderNextMatch() {
       const container = document.getElementById('next-match-content');
       const startBtn = document.getElementById('btn-start-next-match');
       const balanceBadge = document.getElementById('next-match-balance-badge');
 
-      if (!sessionState.nextMatch) {
+      if (!state.nextMatch) {
         startBtn.disabled = true;
+        const eligibleCount = getEligibleWaitingPlayers().length;
         balanceBadge.textContent = '人數不足 4 人';
         balanceBadge.className = 'text-xs font-bold px-2.5 py-1 rounded-lg bg-slate-100 text-slate-500';
-        const eligibleCount = getEligibleWaitingPlayers().length;
         container.innerHTML = `
           <div class="rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50 p-6 text-center">
             <p class="text-slate-600 font-bold text-sm">目前場下可用人員為 ${eligibleCount} 人，尚缺 ${Math.max(0, 4 - eligibleCount)} 人</p>
-            <p class="text-slate-400 text-xs mt-1">等場上球友點選「點我下場」後，系統將自動補齊並分隊</p>
+            <p class="text-slate-400 text-xs mt-1">等場上組別按下「一鍵下場」後，系統將自動補齊並分隊</p>
           </div>
         `;
         return;
       }
 
-      const teamA = sessionState.nextMatch.teamA.map(getPlayerById).filter(Boolean);
-      const teamB = sessionState.nextMatch.teamB.map(getPlayerById).filter(Boolean);
+      const teamA = state.nextMatch.teamA.map(getPlayerById).filter(Boolean);
+      const teamB = state.nextMatch.teamB.map(getPlayerById).filter(Boolean);
       if (teamA.length !== 2 || teamB.length !== 2) {
         startBtn.disabled = true;
         return;
@@ -1586,11 +1322,11 @@
         ? 'text-xs font-extrabold px-2.5 py-1 rounded-lg bg-emerald-100 text-emerald-800'
         : 'text-xs font-extrabold px-2.5 py-1 rounded-lg bg-amber-100 text-amber-800';
 
-      const renderNextCard = (p, area, idx) => {
-        const att = sessionState.attendance[p.id] || { gamesPlayed: 0 };
-        const isSelected = swapSource && swapSource.playerId === p.id;
+      const renderCard = (p) => {
+        const att = state.attendance[p.id] || { gamesPlayed: 0 };
+        const isSelected = swapSourceId === p.id;
         return `
-          <button onclick="handleSelectForSwap('${p.id}', '${area}', ${idx})"
+          <button onclick="handleSelectForSwap('${p.id}')"
             class="w-full p-3 rounded-2xl border-2 text-left transition-all active:scale-95 flex items-center justify-between gap-2
                    ${isSelected ? 'swap-selected' : 'border-slate-200 bg-slate-50 hover:border-blue-300 hover:bg-blue-50/40'}">
             <div class="min-w-0">
@@ -1613,49 +1349,44 @@
           <div class="sm:col-span-5 space-y-2">
             <div class="flex items-center justify-between px-1">
               <span class="text-xs font-extrabold text-blue-700">A 隊</span>
-              <span class="text-xs font-extrabold text-slate-600">級數和：${sumA}</span>
+              <span class="text-xs font-extrabold text-slate-600">級數和 ${sumA}</span>
             </div>
-            ${teamA.map((p, i) => renderNextCard(p, 'nextA', i)).join('')}
+            ${teamA.map(renderCard).join('')}
           </div>
-
           <div class="sm:col-span-1 flex justify-center py-1">
             <span class="w-9 h-9 rounded-full bg-slate-900 text-white text-xs font-black flex items-center justify-center shadow-sm">VS</span>
           </div>
-
           <div class="sm:col-span-5 space-y-2">
             <div class="flex items-center justify-between px-1">
               <span class="text-xs font-extrabold text-indigo-700">B 隊</span>
-              <span class="text-xs font-extrabold text-slate-600">級數和：${sumB}</span>
+              <span class="text-xs font-extrabold text-slate-600">級數和 ${sumB}</span>
             </div>
-            ${teamB.map((p, i) => renderNextCard(p, 'nextB', i)).join('')}
+            ${teamB.map(renderCard).join('')}
           </div>
         </div>
       `;
     }
 
-    // 渲染：再下一組預備（最多 4 格，不足則顯示空缺）
+    // 渲染：再下一組預備（最多 4 格，空缺顯示「待下場補位」）
     function renderSecondQueue() {
       const grid = document.getElementById('second-queue-grid');
       const countEl = document.getElementById('second-queue-count');
-      const q = (sessionState.secondQueue || []).map(getPlayerById).filter(Boolean);
-
+      const q = (state.secondQueue || []).map(getPlayerById).filter(Boolean);
       countEl.textContent = `${q.length} / 4 人`;
 
       let html = '';
       for (let i = 0; i < 4; i++) {
         const p = q[i];
         if (p) {
-          const att = sessionState.attendance[p.id] || { gamesPlayed: 0 };
-          const isSelected = swapSource && swapSource.playerId === p.id;
+          const att = state.attendance[p.id] || { gamesPlayed: 0 };
+          const isSelected = swapSourceId === p.id;
           html += `
-            <button onclick="handleSelectForSwap('${p.id}', 'second', ${i})"
+            <button onclick="handleSelectForSwap('${p.id}')"
               class="p-3 rounded-2xl border-2 text-left transition-all active:scale-95 flex flex-col justify-between min-h-[82px]
                      ${isSelected ? 'swap-selected' : 'border-slate-200 bg-slate-50 hover:border-blue-300 hover:bg-blue-50/40'}">
-              <div class="flex items-center justify-between gap-1">
-                <div class="flex items-center gap-1.5 min-w-0">
-                  ${getGenderBadgeHTML(p.gender)}
-                  <span class="font-extrabold text-sm sm:text-base text-slate-900 truncate">${escapeHTML(p.name)}</span>
-                </div>
+              <div class="flex items-center gap-1.5 min-w-0">
+                ${getGenderBadgeHTML(p.gender)}
+                <span class="font-extrabold text-sm sm:text-base text-slate-900 truncate">${escapeHTML(p.name)}</span>
               </div>
               <div class="mt-2 flex items-center justify-between gap-1">
                 ${getLevelBadgeHTML(p.level, true)}
@@ -1665,9 +1396,9 @@
           `;
         } else {
           html += `
-            <div class="p-3 rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50/50 flex flex-col items-center justify-center text-center min-h-[82px]">
-              <span class="text-xs font-bold text-slate-400">空缺待補</span>
-              <span class="text-[11px] text-slate-300 mt-0.5">等待場上下場</span>
+            <div class="p-3 rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50/60 flex flex-col items-center justify-center text-center min-h-[82px]">
+              <span class="text-xs font-extrabold text-slate-400">待下場補位</span>
+              <span class="text-[11px] text-slate-300 mt-0.5">空缺</span>
             </div>
           `;
         }
@@ -1675,52 +1406,51 @@
       grid.innerHTML = html;
     }
 
-    // 渲染：場下等待與暫休區（顯示所有不在場上的人，包含未排入前兩組的人與暫休者）
+    // 渲染：場下等待與暫休區
     function renderWaitingPool() {
       const listEl = document.getElementById('waiting-pool-list');
       const countEl = document.getElementById('waiting-pool-count');
 
-      const onCourt = getOnCourtActiveIds();
-      const inNext = new Set(sessionState.nextMatch ? [...sessionState.nextMatch.teamA, ...sessionState.nextMatch.teamB] : []);
-      const inSecond = new Set(sessionState.secondQueue || []);
+      const onCourt = getOnCourtIds();
+      const inNext = new Set(state.nextMatch ? [...state.nextMatch.teamA, ...state.nextMatch.teamB] : []);
+      const inSecond = new Set(state.secondQueue || []);
 
-      // 整理所有非場上人員
-      const offCourtList = [];
-      for (const [pid, info] of Object.entries(sessionState.attendance)) {
+      const offList = [];
+      for (const [pid, info] of Object.entries(state.attendance)) {
         if (onCourt.has(pid)) continue;
         const p = getPlayerById(pid);
         if (!p) continue;
         let tag = '等待中';
-        let orderWeight = 2;
-        if (info.paused) { tag = '暫休中'; orderWeight = 3; }
-        else if (inNext.has(pid)) { tag = '下一組'; orderWeight = 0; }
-        else if (inSecond.has(pid)) { tag = '預備組'; orderWeight = 1; }
+        let weight = 2;
+        if (info.paused) { tag = '暫休中'; weight = 3; }
+        else if (inNext.has(pid)) { tag = '下一組'; weight = 0; }
+        else if (inSecond.has(pid)) { tag = '預備組'; weight = 1; }
 
-        offCourtList.push({
+        offList.push({
           ...p,
           gamesPlayed: info.gamesPlayed || 0,
           lastOffTime: info.lastOffTime || 0,
           paused: Boolean(info.paused),
           tag,
-          orderWeight
+          weight
         });
       }
 
-      offCourtList.sort((a, b) => {
-        if (a.orderWeight !== b.orderWeight) return a.orderWeight - b.orderWeight;
+      offList.sort((a, b) => {
+        if (a.weight !== b.weight) return a.weight - b.weight;
         if (a.gamesPlayed !== b.gamesPlayed) return a.gamesPlayed - b.gamesPlayed;
         return a.lastOffTime - b.lastOffTime;
       });
 
-      countEl.textContent = `${offCourtList.length} 人`;
+      countEl.textContent = `${offList.length} 人`;
 
-      if (offCourtList.length === 0) {
-        listEl.innerHTML = `<div class="col-span-full text-center py-4 text-sm text-slate-400 font-medium">所有今日出席球友皆在場上打球中</div>`;
+      if (offList.length === 0) {
+        listEl.innerHTML = `<div class="col-span-full text-center py-4 text-sm text-slate-400 font-medium">所有今日出席球友皆在場上</div>`;
         return;
       }
 
-      listEl.innerHTML = offCourtList.map((p, idx) => {
-        const isSelected = swapSource && swapSource.playerId === p.id;
+      listEl.innerHTML = offList.map(p => {
+        const isSelected = swapSourceId === p.id;
         const tagStyle = p.paused
           ? 'bg-slate-200 text-slate-600'
           : p.tag === '下一組'
@@ -1730,7 +1460,7 @@
               : 'bg-emerald-100 text-emerald-700';
 
         return `
-          <div onclick="${p.paused ? '' : `handleSelectForSwap('${p.id}', 'waiting', ${idx})`}"
+          <div onclick="${p.paused ? '' : `handleSelectForSwap('${p.id}')`}"
             class="p-3 rounded-2xl border-2 flex items-center justify-between gap-2 transition-all
                    ${p.paused ? 'border-slate-200 bg-slate-100/80 opacity-70' : 'cursor-pointer hover:border-blue-300 bg-white'}
                    ${isSelected ? 'swap-selected' : 'border-slate-200'}">
@@ -1757,22 +1487,19 @@
       }).join('');
     }
 
-    // 渲染：永久名冊與今日出席
-    window.renderRosterView = function() {
+    // 渲染：球友名冊
+    function renderRosterView() {
       const grid = document.getElementById('roster-grid');
       const search = (document.getElementById('roster-search').value || '').trim().toLowerCase();
 
-      const total = rosterState.players.length;
-      const checkedCount = Object.keys(sessionState.attendance).length;
-      document.getElementById('roster-total-count').textContent = total;
-      document.getElementById('roster-checked-count').textContent = checkedCount;
+      document.getElementById('roster-total-count').textContent = state.roster.length;
+      document.getElementById('roster-checked-count').textContent = Object.keys(state.attendance).length;
 
-      const filtered = rosterState.players
+      const filtered = state.roster
         .filter(p => !search || p.name.toLowerCase().includes(search))
         .sort((a, b) => {
-          // 今日已勾選的排前面，其次依級數降序
-          const aIn = sessionState.attendance[a.id] ? 1 : 0;
-          const bIn = sessionState.attendance[b.id] ? 1 : 0;
+          const aIn = state.attendance[a.id] ? 1 : 0;
+          const bIn = state.attendance[b.id] ? 1 : 0;
           if (aIn !== bIn) return bIn - aIn;
           return b.level - a.level;
         });
@@ -1780,16 +1507,16 @@
       if (filtered.length === 0) {
         grid.innerHTML = `
           <div class="col-span-full py-10 text-center text-slate-400">
-            <p class="font-bold text-base">尚無符合條件的球友資料</p>
-            <p class="text-xs mt-1">請點擊上方「＋ 新增球友／臨打」或「⚡ 匯入 15 位範例球友」</p>
+            <p class="font-bold text-base">尚無球友資料</p>
+            <p class="text-xs mt-1">請點擊上方「＋ 新增球友」或「⚡ 一鍵建立 15 位範例球友」</p>
           </div>
         `;
         return;
       }
 
       grid.innerHTML = filtered.map(p => {
-        const isChecked = Boolean(sessionState.attendance[p.id]);
-        const games = sessionState.attendance[p.id]?.gamesPlayed || 0;
+        const isChecked = Boolean(state.attendance[p.id]);
+        const games = state.attendance[p.id]?.gamesPlayed || 0;
         return `
           <div class="p-3.5 rounded-2xl border-2 transition-all flex items-center justify-between gap-2
                       ${isChecked ? 'border-emerald-400 bg-emerald-50/40' : 'border-slate-200 bg-white'}">
@@ -1809,7 +1536,6 @@
                 </div>
               </div>
             </div>
-
             <div class="flex items-center gap-1 shrink-0">
               <button onclick="openPlayerModal('${p.id}')" title="編輯"
                 class="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center text-sm">
@@ -1823,7 +1549,7 @@
           </div>
         `;
       }).join('');
-    };
+    }
 
     // 渲染：場次紀錄與統計
     function renderHistoryView() {
@@ -1831,10 +1557,9 @@
       const totalBadge = document.getElementById('stats-total-matches');
       const historyList = document.getElementById('match-history-list');
 
-      totalBadge.textContent = `累計完成 ${sessionState.matchHistory.length} 場`;
+      totalBadge.textContent = `累計完成 ${state.history.length} 場`;
 
-      // 今日球友上場次數統計
-      const stats = Object.entries(sessionState.attendance)
+      const stats = Object.entries(state.attendance)
         .map(([pid, info]) => {
           const p = getPlayerById(pid);
           return p ? { ...p, gamesPlayed: info.gamesPlayed || 0 } : null;
@@ -1843,7 +1568,7 @@
         .sort((a, b) => b.gamesPlayed - a.gamesPlayed || b.level - a.level);
 
       if (stats.length === 0) {
-        statsGrid.innerHTML = `<div class="col-span-full text-center py-4 text-sm text-slate-400">今日尚未有出席球友</div>`;
+        statsGrid.innerHTML = `<div class="col-span-full text-center py-4 text-sm text-slate-400">尚無出席球友</div>`;
       } else {
         statsGrid.innerHTML = stats.map(p => `
           <div class="p-3 rounded-2xl border border-slate-200 bg-slate-50 flex items-center justify-between gap-2">
@@ -1862,23 +1587,22 @@
         `).join('');
       }
 
-      // 場次歷史紀錄（由新到舊）
-      if (sessionState.matchHistory.length === 0) {
+      if (state.history.length === 0) {
         historyList.innerHTML = `
           <div class="py-10 text-center text-slate-400 border-2 border-dashed border-slate-200 rounded-2xl">
             <p class="font-bold">尚無已完成的場次紀錄</p>
-            <p class="text-xs mt-1">當場上 4 人皆點選「已下場」或按下「整組結束」後，紀錄會自動顯示在此</p>
+            <p class="text-xs mt-1">點擊場上組別的「✅ 一鍵下場（4人結束）」後，紀錄會自動顯示於此</p>
           </div>
         `;
         return;
       }
 
-      historyList.innerHTML = sessionState.matchHistory.map(h => {
+      historyList.innerHTML = state.history.map(h => {
         const sumA = h.teamA.reduce((s, p) => s + (p.level || 0), 0);
         const sumB = h.teamB.reduce((s, p) => s + (p.level || 0), 0);
         const durationMin = Math.max(1, Math.round(((h.endTime || h.startTime) - h.startTime) / 60000));
 
-        const renderTeamPills = (team) => team.map(p => `
+        const renderPills = (team) => team.map(p => `
           <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-white border border-slate-200 text-sm font-bold text-slate-800">
             ${getGenderBadgeHTML(p.gender)}
             ${escapeHTML(p.name)}
@@ -1895,16 +1619,15 @@
                 <div class="text-slate-400">歷時約 ${durationMin} 分鐘</div>
               </div>
             </div>
-
             <div class="flex flex-wrap items-center gap-2 flex-1 md:justify-end">
               <div class="flex flex-wrap items-center gap-1.5">
                 <span class="text-xs font-extrabold text-emerald-700">A隊(${sumA})</span>
-                ${renderTeamPills(h.teamA)}
+                ${renderPills(h.teamA)}
               </div>
               <span class="px-2 py-0.5 rounded-md bg-slate-200 text-slate-700 text-xs font-black">VS</span>
               <div class="flex flex-wrap items-center gap-1.5">
                 <span class="text-xs font-extrabold text-teal-700">B隊(${sumB})</span>
-                ${renderTeamPills(h.teamB)}
+                ${renderPills(h.teamB)}
               </div>
             </div>
           </div>
@@ -1913,7 +1636,7 @@
     }
 
     // =========================================================================
-    // 10. 通用 UI 輔助工具（Toast、Confirm Modal、XSS 跳脫）
+    // 8. Toast 與確認視窗
     // =========================================================================
     function showToast(message, type = 'info') {
       const container = document.getElementById('toast-container');
@@ -1931,7 +1654,7 @@
         el.style.opacity = '0';
         el.style.transform = 'translateY(-6px)';
         setTimeout(() => el.remove(), 300);
-      }, 2800);
+      }, 2600);
     }
 
     function openConfirmModal(title, desc, onOk) {
@@ -1941,28 +1664,22 @@
       document.getElementById('confirm-modal').classList.remove('hidden');
     }
 
-    window.closeConfirmModal = function() {
+    function closeConfirmModal() {
       document.getElementById('confirm-modal').classList.add('hidden');
       confirmCallback = null;
-    };
+    }
 
     document.getElementById('confirm-modal-ok').addEventListener('click', () => {
       if (typeof confirmCallback === 'function') confirmCallback();
       closeConfirmModal();
     });
 
-    function escapeHTML(str) {
-      return String(str || '')
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;');
-    }
-
-    // 啟動系統
+    // 初始化啟動
     window.addEventListener('DOMContentLoaded', () => {
-      initAppStorage();
+      loadState();
+      syncQueues(false);
+      updateSaveIndicator();
+      renderAll();
     });
   </script>
 </body>
