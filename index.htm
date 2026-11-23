@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>羽球排點與上場管理系統｜雲端同步版</title>
+  <title>羽球排點與上場管理系統</title>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Google Fonts: Inter & Noto Sans TC -->
@@ -60,8 +60,8 @@
             羽球排點管理系統
           </h1>
           <div class="flex items-center gap-1.5 text-xs font-medium mt-0.5">
-            <span id="sync-dot" class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
-            <span id="sync-status" class="text-slate-500">雲端連線中...</span>
+            <span id="sync-dot" class="w-2 h-2 rounded-full bg-emerald-500 transition-transform duration-300"></span>
+            <span id="sync-status" class="text-slate-600 transition-colors duration-300">💾 本機自動存檔中</span>
           </div>
         </div>
       </div>
@@ -74,7 +74,7 @@
         </button>
         <button onclick="switchTab('roster')" id="tab-btn-roster"
           class="flex-1 sm:flex-none px-4 py-2 rounded-lg text-sm font-bold transition-all text-slate-600 hover:text-slate-900">
-          👥 名冊與出席 <span id="nav-attendance-count" class="ml-1 px-1.5 py-0.5 text-xs rounded-full bg-emerald-100 text-emerald-800">0</span>
+          👥 球友名冊 <span id="nav-attendance-count" class="ml-1 px-1.5 py-0.5 text-xs rounded-full bg-emerald-100 text-emerald-800">0</span>
         </button>
         <button onclick="switchTab('history')" id="tab-btn-history"
           class="flex-1 sm:flex-none px-4 py-2 rounded-lg text-sm font-bold transition-all text-slate-600 hover:text-slate-900">
@@ -88,10 +88,7 @@
           class="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl font-bold text-sm border-2 transition-all
                  disabled:opacity-40 disabled:cursor-not-allowed
                  bg-amber-50 border-amber-300 text-amber-900 hover:bg-amber-100 active:scale-95 shadow-sm">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" />
-          </svg>
-          <span>回復上一步</span>
+          <span>↩️ 回復上一步</span>
           <span id="undo-count-badge" class="px-1.5 py-0.5 text-xs rounded-md bg-amber-200 text-amber-900 font-extrabold">0</span>
         </button>
       </div>
@@ -198,7 +195,7 @@
               class="px-6 py-3.5 rounded-2xl font-extrabold text-base sm:text-lg shadow-md transition-all active:scale-95
                      bg-emerald-600 hover:bg-emerald-700 text-white
                      disabled:bg-slate-200 disabled:text-slate-400 disabled:shadow-none disabled:cursor-not-allowed">
-              ▶ 這組上場開打
+              🏸 開始上場
             </button>
           </div>
         </div>
@@ -289,147 +286,47 @@
 
       <!-- 資料備份與今日重設區 -->
       <div class="bg-white rounded-3xl border border-slate-200 shadow-sm p-4 sm:p-5">
-        <h3 class="text-base font-extrabold text-slate-800 mb-3">系統管理與資料備份</h3>
+        <h3 class="text-base font-extrabold text-slate-800 mb-3">系統管理、資料備份與手動清除</h3>
         <div class="flex flex-wrap items-center gap-3">
           <button onclick="exportBackupJSON()"
             class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-900 text-white font-bold text-sm active:scale-95 transition-all">
-            ⬇ 匯出 JSON 備份
+            ⬇ 匯出備份 (JSON)
           </button>
           <label class="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300 font-bold text-sm cursor-pointer active:scale-95 transition-all">
-            ⬆ 匯入 JSON 備份
+            ⬆ 匯入還原 (JSON)
             <input type="file" accept=".json" onchange="importBackupJSON(event)" class="hidden" />
           </label>
-          <button onclick="confirmResetToday()"
-            class="px-4 py-2.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-bold text-sm active:scale-95 transition-all ml-auto">
-            🔄 重設今日場次（保留永久名冊）
-          </button>
+          <div class="flex flex-wrap items-center gap-2 sm:ml-auto">
+            <button onclick="confirmResetToday()"
+              class="px-4 py-2.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 font-bold text-sm active:scale-95 transition-all">
+              🔄 重設今日場次（保留球友名冊）
+            </button>
+            <button onclick="confirmClearAllData()"
+              class="px-4 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-sm shadow-sm active:scale-95 transition-all">
+              🗑️ 完全清空所有資料
+            </button>
+          </div>
         </div>
       </div>
     </section>
 
-    <!-- ========================================================== -->
-    <!-- TAB 3: 場次紀錄與統計                                       -->
-    <!-- ========================================================== -->
-    <section id="view-history" class="hidden space-y-6">
-      <!-- 今日上場次數統計總覽 -->
-      <div class="bg-white rounded-3xl border border-slate-200 shadow-sm p-4 sm:p-5">
-        <div class="flex items-center justify-between mb-4">
-          <h2 class="text-lg sm:text-xl font-extrabold text-slate-900">今日球友上場次數統計</h2>
-          <span id="stats-total-matches" class="px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-extrabold">
-            累計完成 0 場
-          </span>
-        </div>
-        <div id="player-stats-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2.5">
-          <!-- 動態產生 -->
-        </div>
-      </div>
-
-      <!-- 場次歷史紀錄列表 -->
-      <div class="bg-white rounded-3xl border border-slate-200 shadow-sm p-4 sm:p-5">
-        <h2 class="text-lg sm:text-xl font-extrabold text-slate-900 mb-4">場次上場人員紀錄（由新到舊）</h2>
-        <div id="match-history-list" class="space-y-3">
-          <!-- 動態產生 -->
-        </div>
-      </div>
-    </section>
-
-  </main>
-
-  <!-- ==================== 新增 / 編輯球友 Modal ==================== -->
-  <div id="player-modal" class="hidden fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
-    <div class="bg-white rounded-3xl shadow-2xl max-w-md w-full p-6 border border-slate-200">
-      <div class="flex items-center justify-between mb-5">
-        <h3 id="player-modal-title" class="text-xl font-extrabold text-slate-900">新增球友</h3>
-        <button onclick="closePlayerModal()" class="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold">✕</button>
-      </div>
-      <form id="player-form" onsubmit="handleSavePlayer(event)" class="space-y-4">
-        <input type="hidden" id="edit-player-id" />
-
-        <div>
-          <label class="block text-sm font-bold text-slate-700 mb-1.5">姓名 / 暱稱</label>
-          <input id="input-player-name" type="text" required maxlength="20" placeholder="例如：阿明"
-            class="w-full px-4 py-3 rounded-xl border border-slate-300 text-base font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500" />
-        </div>
-
-        <div>
-          <label class="block text-sm font-bold text-slate-700 mb-1.5">性別</label>
-          <div class="grid grid-cols-2 gap-3">
-            <label class="cursor-pointer">
-              <input type="radio" name="gender" value="M" checked class="peer hidden" />
-              <div class="py-3 text-center rounded-xl border-2 border-slate-200 font-bold text-slate-600 peer-checked:border-blue-500 peer-checked:bg-blue-50 peer-checked:text-blue-700 transition-all">
-                ♂ 男生
-              </div>
-            </label>
-            <label class="cursor-pointer">
-              <input type="radio" name="gender" value="F" class="peer hidden" />
-              <div class="py-3 text-center rounded-xl border-2 border-slate-200 font-bold text-slate-600 peer-checked:border-pink-500 peer-checked:bg-pink-50 peer-checked:text-pink-700 transition-all">
-                ♀ 女生
-              </div>
-            </label>
-          </div>
-        </div>
-
-        <div>
-          <div class="flex items-center justify-between mb-1.5">
-            <label class="text-sm font-bold text-slate-700">羽球層級（1–18 級）</label>
-            <span id="modal-level-preview" class="px-2.5 py-0.5 rounded-lg text-xs font-extrabold border">Lv.7 中階</span>
-          </div>
-          <input id="input-player-level" type="range" min="1" max="18" value="7" oninput="updateModalLevelPreview(this.value)"
-            class="w-full accent-emerald-600 h-2.5 bg-slate-200 rounded-lg cursor-pointer" />
-          <div class="flex justify-between text-[11px] text-slate-400 font-medium mt-1">
-            <span>1 新手</span>
-            <span>6 初階</span>
-            <span>9 中階</span>
-            <span>12 進階</span>
-            <span>15 高階</span>
-            <span>18 甲組</span>
-          </div>
-        </div>
-
-        <div id="modal-checkin-row" class="flex items-center gap-2.5 pt-1">
-          <input id="input-player-checkin" type="checkbox" checked class="w-5 h-5 accent-emerald-600 rounded" />
-          <label for="input-player-checkin" class="text-sm font-bold text-slate-700 cursor-pointer">
-            同時加入「今日出席名單」
-          </label>
-        </div>
-
-        <div class="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100">
-          <button type="button" onclick="closePlayerModal()"
-            class="px-5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm">
-            取消
-          </button>
-          <button type="submit"
-            class="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm shadow-sm">
-            儲存球友
-          </button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- ==================== 通用確認對話框 Modal ==================== -->
-  <div id="confirm-modal" class="hidden fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
-    <div class="bg-white rounded-3xl shadow-2xl max-w-sm w-full p-6 border border-slate-200">
-      <h3 id="confirm-modal-title" class="text-lg font-extrabold text-slate-900 mb-2">確認操作</h3>
-      <p id="confirm-modal-desc" class="text-sm text-slate-600 mb-6 leading-relaxed"></p>
-      <div class="flex items-center justify-end gap-2.5">
-        <button onclick="closeConfirmModal()"
-          class="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm">
-          取消
-        </button>
-        <button id="confirm-modal-ok"
-          class="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-sm shadow-sm">
-          確認執行
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- ==================== JavaScript & Firebase 雲端同步邏輯 ==================== -->
+  <!-- ==================== JavaScript 本機自動存檔與選配 Firebase 雲端同步 ==================== -->
   <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-    import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-    import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    // =========================================================================
+    // 【選配】Firebase 雲端同步設定區
+    // 預設 apiKey 為空：系統將完全使用「本機 localStorage 自動存檔」，不載入 Firebase、零錯誤。
+    // 未來若需多台平板跨裝置即時同步，只要將 Firebase Console 取得的設定貼入下方即可自動啟用。
+    // =========================================================================
+    const USER_FIREBASE_CONFIG = {
+      apiKey: "",
+      authDomain: "",
+      projectId: "",
+      storageBucket: "",
+      messagingSenderId: "",
+      appId: ""
+    };
+
+    const STORAGE_KEY = 'badminton_queue_state_v2';
 
     // =========================================================================
     // 1. 全域狀態定義
@@ -439,6 +336,8 @@
     let auth = null;
     let currentUser = null;
     let isCloudReady = false;
+    let firestoreSetDoc = null;
+    let firestoreDoc = null;
 
     // 永久總名冊
     let rosterState = {
@@ -446,10 +345,10 @@
       updatedAt: 0
     };
 
-    // 今日開團狀態（可雲端同步 & Undo）
+    // 今日開團狀態（本機自動存檔 & 選配雲端同步 & Undo）
     let sessionState = createEmptySession();
 
-    // 介面互動暫存狀態（不同步到雲端）
+    // 介面互動暫存狀態
     let activeTab = 'main';
     let swapSource = null; // { playerId, area: 'nextA'|'nextB'|'second'|'waiting', index }
     let confirmCallback = null;
@@ -468,81 +367,185 @@
     }
 
     // =========================================================================
-    // 2. Firebase 初始化與即時監聽 (Strict Rules: Auth -> Public Artifacts Path)
+    // 2. 100% 穩定的 localStorage 本機持久化 + 選配 Firebase 雲端同步
     // =========================================================================
-    async function initFirebase() {
+    function loadFromLocalStorage() {
       try {
-        if (typeof __firebase_config === 'undefined' || !__firebase_config) {
-          setSyncStatus('offline', '本機展示模式（未偵測雲端設定）');
-          renderAll();
-          return;
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return false;
+        const parsed = JSON.parse(raw);
+        if (parsed && parsed.rosterState && Array.isArray(parsed.rosterState.players)) {
+          rosterState = {
+            players: parsed.rosterState.players,
+            updatedAt: parsed.rosterState.updatedAt || Date.now()
+          };
         }
+        if (parsed && parsed.sessionState) {
+          sessionState = {
+            ...createEmptySession(),
+            ...parsed.sessionState
+          };
+        }
+        return true;
+      } catch (err) {
+        console.warn('讀取本機存檔失敗，將使用初始狀態：', err);
+        return false;
+      }
+    }
 
-        const firebaseConfig = JSON.parse(__firebase_config);
-        const app = initializeApp(firebaseConfig);
-        db = getFirestore(app);
-        auth = getAuth(app);
+    function saveToLocalStorage() {
+      try {
+        const payload = {
+          version: 2,
+          savedAt: Date.now(),
+          rosterState,
+          sessionState
+        };
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+        flashSaveIndicator();
+      } catch (err) {
+        console.error('寫入 localStorage 失敗：', err);
+        showToast('本機存檔失敗，請確認瀏覽器未處於無痕模式或空間已滿', 'error');
+      }
+    }
 
-        // RULE 3: 必須先完成登入驗證，才能進行 Firestore 讀寫
-        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-          const cred = await signInWithCustomToken(auth, __initial_auth_token);
+    function flashSaveIndicator() {
+      const dot = document.getElementById('sync-dot');
+      const label = document.getElementById('sync-status');
+      const nowStr = new Date().toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+      const baseText = isCloudReady ? '☁️ Firebase 雲端同步中' : '💾 本機自動存檔中';
+
+      if (label) {
+        label.textContent = `${baseText}（已存檔 ${nowStr}）`;
+        label.classList.add('text-emerald-700', 'font-bold');
+        setTimeout(() => {
+          label.classList.remove('text-emerald-700', 'font-bold');
+        }, 1200);
+      }
+      if (dot) {
+        dot.classList.add('scale-150');
+        setTimeout(() => dot.classList.remove('scale-150'), 350);
+      }
+    }
+
+    async function initAppStorage() {
+      // 1. 頁面載入立即還原 localStorage，確保零延遲且離線可用
+      loadFromLocalStorage();
+      setSyncStatus('local', '💾 本機自動存檔中');
+      renderAll();
+
+      // 2. 檢查是否有填入選配的 Firebase 設定；若 apiKey 為空則完全不啟動 Firebase（零 Console 錯誤）
+      const hasUserFirebase = Boolean(USER_FIREBASE_CONFIG && USER_FIREBASE_CONFIG.apiKey && USER_FIREBASE_CONFIG.apiKey.trim());
+      if (!hasUserFirebase) {
+        return;
+      }
+
+      try {
+        setSyncStatus('connecting', '☁️ 正在連線 Firebase...');
+        const [appMod, authMod, fsMod] = await Promise.all([
+          import("https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js"),
+          import("https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js"),
+          import("https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js")
+        ]);
+
+        const app = appMod.initializeApp(USER_FIREBASE_CONFIG);
+        db = fsMod.getFirestore(app);
+        auth = authMod.getAuth(app);
+        firestoreSetDoc = fsMod.setDoc;
+        firestoreDoc = fsMod.doc;
+
+        try {
+          const cred = await authMod.signInAnonymously(auth);
           currentUser = cred.user;
-        } else {
-          const cred = await signInAnonymously(auth);
-          currentUser = cred.user;
+        } catch (authErr) {
+          // 若使用者在 Firebase 未啟用匿名登入但已開啟 Firestore 測試規則，仍允許直接讀寫
+          currentUser = { uid: 'public_guest' };
         }
 
         isCloudReady = true;
-        setSyncStatus('online', '雲端即時同步中');
+        setSyncStatus('cloud', '☁️ Firebase 雲端同步中');
 
-        // RULE 1: 使用嚴格路徑 /artifacts/{appId}/public/data/{collection}/{doc}
-        const rosterDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'badminton_system', 'roster_v1');
-        const sessionDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'badminton_system', 'session_v1');
+        const rosterDocRef = fsMod.doc(db, 'badminton_system', 'roster_v2');
+        const sessionDocRef = fsMod.doc(db, 'badminton_system', 'session_v2');
 
-        // 監聽永久總名冊
-        onSnapshot(rosterDocRef, (snap) => {
+        fsMod.onSnapshot(rosterDocRef, (snap) => {
           if (snap.exists()) {
             const data = snap.data();
             rosterState = {
               players: Array.isArray(data.players) ? data.players : [],
               updatedAt: data.updatedAt || Date.now()
             };
-          } else {
-            rosterState = { players: [], updatedAt: Date.now() };
+            saveToLocalStorage();
+            renderAll();
           }
-          renderAll();
         }, (err) => {
-          console.error('Roster snapshot error:', err);
-          setSyncStatus('error', '名冊同步發生錯誤');
+          console.error('Firebase 名冊同步錯誤：', err);
+          isCloudReady = false;
+          setSyncStatus('local', '💾 本機自動存檔中（雲端權限異常）');
         });
 
-        // 監聽今日開團狀態
-        onSnapshot(sessionDocRef, (snap) => {
+        fsMod.onSnapshot(sessionDocRef, (snap) => {
           if (snap.exists()) {
             const data = snap.data();
             sessionState = {
-              attendance: data.attendance || {},
-              activeMatches: Array.isArray(data.activeMatches) ? data.activeMatches : [],
-              nextMatch: data.nextMatch || null,
-              secondQueue: Array.isArray(data.secondQueue) ? data.secondQueue : [],
-              matchHistory: Array.isArray(data.matchHistory) ? data.matchHistory : [],
-              matchCounter: typeof data.matchCounter === 'number' ? data.matchCounter : 1,
-              undoStack: Array.isArray(data.undoStack) ? data.undoStack : [],
-              updatedAt: data.updatedAt || Date.now()
+              ...createEmptySession(),
+              ...data
             };
-          } else {
-            sessionState = createEmptySession();
+            saveToLocalStorage();
+            renderAll();
           }
-          renderAll();
         }, (err) => {
-          console.error('Session snapshot error:', err);
-          setSyncStatus('error', '場次同步發生錯誤');
+          console.error('Firebase 場次同步錯誤：', err);
+          isCloudReady = false;
+          setSyncStatus('local', '💾 本機自動存檔中（雲端權限異常）');
         });
-
       } catch (err) {
-        console.error('Firebase init error:', err);
-        setSyncStatus('offline', '離線展示模式（連線失敗）');
-        renderAll();
+        console.error('Firebase 初始化失敗，已自動切換回本機自動存檔：', err);
+        isCloudReady = false;
+        setSyncStatus('local', '💾 本機自動存檔中');
+      }
+    }
+
+    async function saveRosterToCloud() {
+      rosterState.updatedAt = Date.now();
+      saveToLocalStorage();
+      renderAll();
+      if (!isCloudReady || !db || !firestoreSetDoc || !firestoreDoc) return;
+      try {
+        const rosterDocRef = firestoreDoc(db, 'badminton_system', 'roster_v2');
+        await firestoreSetDoc(rosterDocRef, rosterState);
+      } catch (err) {
+        console.error('Save roster to cloud error:', err);
+        showToast('已存檔至本機，但雲端同步失敗', 'warning');
+      }
+    }
+
+    async function saveSessionToCloud() {
+      sessionState.updatedAt = Date.now();
+      saveToLocalStorage();
+      renderAll();
+      if (!isCloudReady || !db || !firestoreSetDoc || !firestoreDoc) return;
+      try {
+        const sessionDocRef = firestoreDoc(db, 'badminton_system', 'session_v2');
+        await firestoreSetDoc(sessionDocRef, sessionState);
+      } catch (err) {
+        console.error('Save session to cloud error:', err);
+        showToast('已存檔至本機，但雲端同步失敗', 'warning');
+      }
+    }
+
+    function setSyncStatus(state, text) {
+      const dot = document.getElementById('sync-dot');
+      const label = document.getElementById('sync-status');
+      if (label) label.textContent = text;
+      if (!dot) return;
+      dot.className = 'w-2 h-2 rounded-full transition-transform duration-300 ';
+      if (state === 'cloud') {
+        dot.classList.add('bg-blue-500');
+      } else if (state === 'local') {
+        dot.classList.add('bg-emerald-500');
+      } else {
+        dot.classList.add('bg-amber-400', 'animate-pulse');
       }
     }
 
@@ -587,48 +590,12 @@
     }
 
     // =========================================================================
-    // 3. 羽球層級 1–18 級視覺標籤工具
-    // =========================================================================
-    function getLevelMeta(level) {
-      const lv = Number(level) || 1;
-      if (lv <= 3)  return { label: '新手', cls: 'bg-slate-200 text-slate-700 border-slate-300' };
-      if (lv <= 6)  return { label: '初階', cls: 'bg-emerald-100 text-emerald-800 border-emerald-300' };
-      if (lv <= 9)  return { label: '中階', cls: 'bg-amber-100 text-amber-800 border-amber-300' };
-      if (lv <= 12) return { label: '進階', cls: 'bg-rose-100 text-rose-800 border-rose-300' };
-      if (lv <= 15) return { label: '高階', cls: 'bg-purple-100 text-purple-800 border-purple-300' };
-      return { label: '甲組', cls: 'bg-slate-900 text-amber-400 border-amber-500' };
-    }
-
-    function getLevelBadgeHTML(level, compact = false) {
-      const meta = getLevelMeta(level);
-      if (compact) {
-        return `<span class="inline-flex items-center px-1.5 py-0.5 rounded-md text-[11px] font-extrabold border ${meta.cls}">Lv.${level}</span>`;
-      }
-      return `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs font-extrabold border ${meta.cls}">Lv.${level} ${meta.label}</span>`;
-    }
-
-    function getGenderBadgeHTML(gender) {
-      return gender === 'F'
-        ? `<span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-pink-100 text-pink-700 text-xs font-black">♀</span>`
-        : `<span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-blue-100 text-blue-700 text-xs font-black">♂</span>`;
-    }
-
-    function getPlayerById(id) {
-      return rosterState.players.find(p => p.id === id) || null;
-    }
-
-    function formatTime(ts) {
-      if (!ts) return '--:--';
-      const d = new Date(ts);
-      return d.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit', hour12: false });
-    }
-
-    // =========================================================================
-    // 4. Undo 狀態快照機制（最多保留 30 步）
+    // 4. Undo 狀態快照機制（最多保留 30 步，包含名冊與場次完整還原）
     // =========================================================================
     function pushUndoSnapshot(actionLabel) {
       const snapshot = {
         label: actionLabel,
+        rosterPlayers: rosterState.players,
         attendance: sessionState.attendance,
         activeMatches: sessionState.activeMatches,
         nextMatch: sessionState.nextMatch,
@@ -638,7 +605,7 @@
       };
       const serialized = JSON.stringify(snapshot);
       sessionState.undoStack = [...(sessionState.undoStack || []), serialized];
-      // 上限 30 步，同時確保不超過 Firestore 文件安全大小
+      // 上限 30 步
       while (sessionState.undoStack.length > 30) {
         sessionState.undoStack.shift();
       }
@@ -650,6 +617,10 @@
       const raw = sessionState.undoStack.pop();
       try {
         const snap = JSON.parse(raw);
+        if (Array.isArray(snap.rosterPlayers)) {
+          rosterState.players = snap.rosterPlayers;
+          saveRosterToCloud();
+        }
         sessionState.attendance = snap.attendance || {};
         sessionState.activeMatches = snap.activeMatches || [];
         sessionState.nextMatch = snap.nextMatch || null;
@@ -1152,13 +1123,16 @@
       if (id) {
         const p = getPlayerById(id);
         if (p) {
+          pushUndoSnapshot(`編輯球友：${p.name}`);
           p.name = name;
           p.level = level;
           p.gender = gender;
         }
         saveRosterToCloud();
+        saveSessionToCloud();
         showToast(`已更新球友「${name}」資料`, 'success');
       } else {
+        pushUndoSnapshot(`新增球友：${name}`);
         const newId = 'p_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
         rosterState.players.push({
           id: newId,
@@ -1167,10 +1141,7 @@
           gender,
           createdAt: Date.now()
         });
-        saveRosterToCloud();
-
         if (autoCheckin) {
-          pushUndoSnapshot(`新增並加入今日出席：${name}`);
           sessionState.attendance[newId] = {
             gamesPlayed: 0,
             lastOffTime: 0,
@@ -1178,8 +1149,9 @@
             joinedAt: Date.now()
           };
           syncQueues(false);
-          saveSessionToCloud();
         }
+        saveRosterToCloud();
+        saveSessionToCloud();
         showToast(`已新增球友「${name}」`, 'success');
       }
       closePlayerModal();
@@ -1198,14 +1170,14 @@
         '刪除永久名冊球友',
         `確定要從永久名冊中刪除「${p.name}」嗎？此操作也會將他移出今日出席名單。`,
         () => {
+          pushUndoSnapshot(`刪除球友：${p.name}`);
           rosterState.players = rosterState.players.filter(x => x.id !== playerId);
-          saveRosterToCloud();
           if (sessionState.attendance[playerId]) {
-            pushUndoSnapshot(`刪除球友：${p.name}`);
             delete sessionState.attendance[playerId];
             syncQueues(false);
-            saveSessionToCloud();
           }
+          saveRosterToCloud();
+          saveSessionToCloud();
           showToast(`已刪除球友「${p.name}」`, 'info');
         }
       );
@@ -1314,7 +1286,7 @@
     // 重設今日場次（保留永久名冊）
     window.confirmResetToday = function() {
       openConfirmModal(
-        '重設今日場次',
+        '重設今日場次（保留球友名冊）',
         '這將清空今日所有場上進行中的組別、場次紀錄並將今日上場次數歸零（永久名冊會完整保留，且可用「回復上一步」還原）。確定執行嗎？',
         () => {
           pushUndoSnapshot('重設今日場次');
@@ -1334,7 +1306,33 @@
           sessionState.matchCounter = 1;
           syncQueues(true);
           saveSessionToCloud();
-          showToast('今日場次已重設，永久名冊已保留', 'info');
+          showToast('今日場次已重設，球友名冊已完整保留', 'info');
+        }
+      );
+    };
+
+    // 完全清空所有資料（含本機 localStorage 與永久名冊）
+    window.confirmClearAllData = function() {
+      openConfirmModal(
+        '⚠️ 完全清空所有資料',
+        '此動作會徹底清除瀏覽器內的所有紀錄，包含【永久球友名冊、今日出席、場上進度、歷史場次與回復紀錄】，且無法透過「回復上一步」復原！建議先匯出 JSON 備份。確定要完全清空嗎？',
+        () => {
+          try {
+            localStorage.removeItem(STORAGE_KEY);
+          } catch (e) {
+            console.error('清除 localStorage 失敗：', e);
+          }
+          rosterState = { players: [], updatedAt: Date.now() };
+          sessionState = createEmptySession();
+          if (isCloudReady) {
+            saveRosterToCloud();
+            saveSessionToCloud();
+          } else {
+            renderAll();
+            setSyncStatus('local', '💾 本機自動存檔中（已清空）');
+          }
+          switchTab('main');
+          showToast('已完全清空所有本機資料', 'warning');
         }
       );
     };
@@ -1964,7 +1962,7 @@
 
     // 啟動系統
     window.addEventListener('DOMContentLoaded', () => {
-      initFirebase();
+      initAppStorage();
     });
   </script>
 </body>
