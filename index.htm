@@ -637,15 +637,30 @@
   <script>
     const STORAGE_KEY = 'badminton_queue_v4';
     const ALLOWED_LEVELS = [5, 6, 7, 8, 9, 10];
+    const MAX_UNDO = 30;
 
     let state = createInitialState();
     let activeTab = 'main';
     let swapSourceId = null;
-    // 常見台灣羽球友男／女暱稱池
-    const MALE_NAME_POOL = [
-      '阿明', '大衛', '冠宇', '志豪', '柏翰', '俊傑', '家豪', '宗翰', '承恩', '宇軒',
-      '建宏', '哲維', '育誠', '彥廷', '子軒', '俊宏', '偉哲', '明哲', '政宏', '凱文',
-      '阿傑', '阿宏', '阿瑋', '小張'
+    let lastSimResult = null;
+    let confirmCallback = null;
+
+    function createInitialState() {
+      return {
+        roster: [],
+        attendance: {},
+        activeMatches: [],
+        manualSlots: [null, null, null, null],
+        manualModeOverride: false,
+        nextMatch: null,
+        secondQueue: [],
+        history: [],
+        undoStack: [],
+        matchCounter: 1,
+        defaultFee: 200
+      };
+    }
+
     // 隨機生成 15 位球友（固定 10 男 5 女，涵蓋 5–10 級；預設 12 位已到場 + 3 位遲到待報到）
     function generateRandom15Players10M5F() {
       const maleNames = ['阿明', '大衛', '冠宇', '志豪', '柏翰', '俊傑', '家豪', '宗翰', '承恩', '宇軒', '建宏', '哲瑋', '彥廷', '子豪'];
@@ -684,6 +699,662 @@
 
     // =========================================================================
     // 1. 純本機 localStorage 讀寫
+    // =========================================================================
+    function loadState() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) {
+          state = createInitialState();
+          return;
+        }
+        const parsed = JSON.parse(raw);
+        state = { ...createInitialState(), ...parsed };
+        state.roster = (state.roster || []).map(p => ({ ...p, level: clampLevel(p.level) }));
+        if (!Array.isArray(state.manualSlots) || state.manualSlots.length !== 4) {
+          state.manualSlots = [null, null, null, null];
+        }
+        if (!Array.isArray(state.undoStack)) state.undoStack = [];
+      } catch (err) {
+        console.error('讀取本機存檔失敗:', err);
+        state = createInitialState();
+      }
+    }
+
+    function saveState() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        updateSaveIndicator();
+      } catch (err) {
+        console.error('寫入本機存檔失敗:', err);
+        showToast('本機存檔空間不足或被瀏覽器阻擋', 'error');
+      }
+      renderAll();
+    }
+
+    function updateSaveIndicator() {
+      const statusEl = document.getElementById('save-status');
+      const dotEl = document.getElementById('save-dot');
+      if (statusEl) {
+        statusEl.textContent = `💾 本機已存檔 (${formatTime(Date.now())})`;
+      }
+      if (dotEl) {
+        dotEl.classList.add('scale-125');
+        setTimeout(() => dotEl.classList.remove('scale-125'), 250);
+      }
+    }
+
+    // =========================================================================
+    // 2. 30 步狀態快照復原 (Undo)
+    // =========================================================================
+    function pushUndo(label) {
+      const snapshot = {
+        label,
+        data: JSON.stringify({
+          roster: state.roster,
+          attendance: state.attendance,
+          activeMatches: state.activeMatches,
+          manualSlots: state.manualSlots,
+          manualModeOverride: state.manualModeOverride,
+          nextMatch: state.nextMatch,
+          secondQueue: state.secondQueue,
+          history: state.history,
+          matchCounter: state.matchCounter,
+          defaultFee: state.defaultFee
+        })
+      };
+      state.undoStack = state.undoStack || [];
+      state.undoStack.push(snapshot);
+      if (state.undoStack.length > MAX_UNDO) {
+        state.undoStack.shift();
+      }
+    }
+
+    function handleUndo() {
+      if (!state.undoStack || state.undoStack.length === 0) return;
+      const last = state.undoStack.pop();
+      try {
+        const restored = JSON.parse(last.data);
+        state = {
+          ...createInitialState(),
+          ...restored,
+          undoStack: state.undoStack
+        };
+        cancelSwap();
+        saveState();
+        showToast(`已回復上一步：${last.label}`, 'info');
+      } catch (err) {
+        showToast('復原失敗，資料格式異常', 'error');
+      }
+    }
+
+    // =========================================================================
+    // 3. 工具與顯示標籤函式
+    // =========================================================================
+    function clampLevel(lv) {
+      const n = Number(lv);
+      if (Number.isNaN(n)) return 7;
+      return Math.min(10, Math.max(5, Math.round(n)));
+    }
+
+    function getLevelMeta(lv) {
+      const level = clampLevel(lv);
+      const map = {
+        5: { label: 'Lv.5', cls: 'bg-emerald-100 text-emerald-900 border-emerald-400' },
+        6: { label: 'Lv.6', cls: 'bg-sky-100 text-sky-900 border-sky-400' },
+        7: { label: 'Lv.7', cls: 'bg-amber-100 text-amber-950 border-amber-400' },
+        8: { label: 'Lv.8', cls: 'bg-rose-100 text-rose-900 border-rose-400' },
+        9: { label: 'Lv.9', cls: 'bg-purple-100 text-purple-950 border-purple-400' },
+        10: { label: 'Lv.10', cls: 'bg-slate-900 text-amber-300 border-amber-500' }
+      };
+      return map[level] || map[7];
+    }
+
+    function getLevelBadgeHTML(lv) {
+      const meta = getLevelMeta(lv);
+      return `<span class="inline-flex items-center px-2 py-0.5 rounded-md border text-[11px] font-black shrink-0 ${meta.cls}">${meta.label}</span>`;
+    }
+
+    function getGenderBadgeHTML(gender) {
+      return gender === 'F'
+        ? `<span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-rose-100 text-rose-700 text-xs font-black shrink-0">♀</span>`
+        : `<span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-blue-100 text-blue-700 text-xs font-black shrink-0">♂</span>`;
+    }
+
+    function getMatchType(teamA, teamB) {
+      const all = [...(teamA || []), ...(teamB || [])];
+      if (all.length !== 4) return '自由配';
+      const females = all.filter(p => p && p.gender === 'F').length;
+      const males = all.filter(p => p && p.gender === 'M').length;
+      if (females === 4) return '女雙';
+      if (males === 4) return '男雙';
+      if (males === 2 && females === 2) return '混雙';
+      return '自由配';
+    }
+
+    function getMatchTypeBadgeHTML(type) {
+      const cls = type === '女雙'
+        ? 'bg-rose-100 text-rose-800 border-rose-300'
+        : type === '男雙'
+          ? 'bg-blue-100 text-blue-800 border-blue-300'
+          : type === '混雙'
+            ? 'bg-purple-100 text-purple-800 border-purple-300'
+            : 'bg-slate-100 text-slate-700 border-slate-300';
+      return `<span class="inline-flex items-center px-2 py-0.5 rounded-lg border text-xs font-extrabold ${cls}">${type}</span>`;
+    }
+
+    function getModeBadgeHTML(isManual) {
+      return isManual
+        ? `<span class="inline-flex items-center px-2 py-0.5 rounded-lg bg-amber-100 text-amber-900 border border-amber-300 text-xs font-extrabold">✋ 手動</span>`
+        : `<span class="inline-flex items-center px-2 py-0.5 rounded-lg bg-blue-100 text-blue-800 border border-blue-200 text-xs font-extrabold">🤖 自動</span>`;
+    }
+
+    function escapeHTML(str) {
+      return String(str ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function formatTime(ts) {
+      if (!ts) return '--:--';
+      const d = new Date(ts);
+      const hh = String(d.getHours()).padStart(2, '0');
+      const mm = String(d.getMinutes()).padStart(2, '0');
+      return `${hh}:${mm}`;
+    }
+
+    function getPlayerById(id) {
+      return state.roster.find(p => p.id === id) || null;
+    }
+
+    function getOnCourtIds() {
+      const set = new Set();
+      (state.activeMatches || []).forEach(m => {
+        (m.teamA || []).forEach(id => set.add(id));
+        (m.teamB || []).forEach(id => set.add(id));
+      });
+      return set;
+    }
+
+    function getStartedMatchesCount() {
+      return (state.history?.length || 0) + (state.activeMatches?.length || 0);
+    }
+
+    function isManualModeActive() {
+      return getStartedMatchesCount() < 2 || Boolean(state.manualModeOverride);
+    }
+
+    // =========================================================================
+    // 4. 智慧排點演算法（公平上場數 → 4女優先 → 4男優先 → 2男2女對稱混雙 + 級別接近）
+    // =========================================================================
+    function getEligibleWaitingPlayers() {
+      const onCourt = getOnCourtIds();
+      const list = [];
+      for (const [pid, info] of Object.entries(state.attendance || {})) {
+        if (onCourt.has(pid) || info.paused) continue;
+        const p = getPlayerById(pid);
+        if (!p) continue;
+        list.push({
+          ...p,
+          gamesPlayed: info.gamesPlayed || 0,
+          lastOffTime: info.lastOffTime || 0,
+          joinedAt: info.joinedAt || 0
+        });
+      }
+      return list.sort((a, b) => {
+        if (a.gamesPlayed !== b.gamesPlayed) return a.gamesPlayed - b.gamesPlayed;
+        if (a.lastOffTime !== b.lastOffTime) return a.lastOffTime - b.lastOffTime;
+        return a.joinedAt - b.joinedAt;
+      });
+    }
+
+    function splitFourPlayers(fourObjs) {
+      const combos = [
+        { a: [fourObjs[0], fourObjs[1]], b: [fourObjs[2], fourObjs[3]] },
+        { a: [fourObjs[0], fourObjs[2]], b: [fourObjs[1], fourObjs[3]] },
+        { a: [fourObjs[0], fourObjs[3]], b: [fourObjs[1], fourObjs[2]] }
+      ];
+
+      const is2M2F = fourObjs.filter(p => p.gender === 'M').length === 2 &&
+                     fourObjs.filter(p => p.gender === 'F').length === 2;
+
+      let best = null;
+      combos.forEach(c => {
+        const sumA = c.a[0].level + c.a[1].level;
+        const sumB = c.b[0].level + c.b[1].level;
+        const diff = Math.abs(sumA - sumB);
+        const aMixed = c.a[0].gender !== c.a[1].gender;
+        const bMixed = c.b[0].gender !== c.b[1].gender;
+        const isSymMixed = is2M2F && aMixed && bMixed;
+
+        // 2男2女時強制優先「1男1女 vs 1男1女」對稱混雙
+        const score = diff * 10 + (is2M2F && !isSymMixed ? 1000 : 0);
+        if (!best || score < best.score) {
+          best = {
+            teamA: [c.a[0].id, c.a[1].id],
+            teamB: [c.b[0].id, c.b[1].id],
+            levelDiff: diff,
+            score
+          };
+        }
+      });
+
+      return best;
+    }
+
+    function pickSmartFour(eligiblePlayers, randomizeTie = false) {
+      if (!eligiblePlayers || eligiblePlayers.length < 4) return null;
+
+      // 建立公平候選池：取與最少上場數落差 <= 1 的人（至少取前 7 人以便湊性別與級別）
+      const minGames = eligiblePlayers[0].gamesPlayed;
+      let pool = eligiblePlayers.filter(p => p.gamesPlayed <= minGames + 1);
+      if (pool.length < 4) pool = eligiblePlayers.slice(0, 4);
+      else if (pool.length > 9) pool = pool.slice(0, 9);
+
+      const females = pool.filter(p => p.gender === 'F');
+      const males = pool.filter(p => p.gender === 'M');
+
+      // 產生候選 4 人組合
+      function getCombinations(arr, k) {
+        const res = [];
+        function helper(start, chosen) {
+          if (chosen.length === k) {
+            res.push([...chosen]);
+            return;
+          }
+          for (let i = start; i < arr.length; i++) {
+            chosen.push(arr[i]);
+            helper(i + 1, chosen);
+            chosen.pop();
+          }
+        }
+        helper(0, []);
+        return res;
+      }
+
+      let candidateGroups = [];
+      // 優先序 1：4位女生優先
+      if (females.length >= 4) {
+        candidateGroups = getCombinations(females, 4);
+      }
+      // 優先序 2：再來 4位男生
+      else if (males.length >= 4) {
+        candidateGroups = getCombinations(males, 4);
+      }
+      // 優先序 3：2男2女對稱混雙
+      else if (males.length >= 2 && females.length >= 2) {
+        const mPairs = getCombinations(males, 2);
+        const fPairs = getCombinations(females, 2);
+        mPairs.forEach(mp => fPairs.forEach(fp => candidateGroups.push([...mp, ...fp])));
+      }
+      // 備援：任意 4 人
+      else {
+        candidateGroups = getCombinations(pool, 4);
+      }
+
+      const poolRank = new Map(eligiblePlayers.map((p, idx) => [p.id, idx]));
+      let bestPick = null;
+
+      candidateGroups.forEach(group => {
+        const split = splitFourPlayers(group);
+        const totalGames = group.reduce((s, p) => s + p.gamesPlayed, 0);
+        const rankSum = group.reduce((s, p) => s + (poolRank.get(p.id) ?? 99), 0);
+        const levels = group.map(p => p.level);
+        const spread = Math.max(...levels) - Math.min(...levels);
+
+        // 級距超過 2 級加重懲罰，避免 5 級與 10 級同場
+        const spreadPenalty = spread > 2 ? (spread - 2) * 22 : spread * 2;
+        const jitter = randomizeTie ? Math.random() * 8 : 0;
+
+        const score = totalGames * 35 + rankSum * 4 + spreadPenalty + split.levelDiff * 6 + jitter;
+        if (!bestPick || score < bestPick.score) {
+          bestPick = {
+            teamA: split.teamA,
+            teamB: split.teamB,
+            levelDiff: split.levelDiff,
+            score
+          };
+        }
+      });
+
+      return bestPick;
+    }
+
+    function syncQueues(forceRecalc = false) {
+      const onCourt = getOnCourtIds();
+      const isValidWaiting = (pid) => {
+        if (!pid) return false;
+        const att = state.attendance[pid];
+        return Boolean(att && !att.paused && !onCourt.has(pid) && getPlayerById(pid));
+      };
+
+      // 清理手動槽位中已不在場下等待的球友
+      state.manualSlots = (state.manualSlots || [null, null, null, null]).map(pid =>
+        isValidWaiting(pid) ? pid : null
+      );
+
+      // 驗證或重算下一組上場 (nextMatch)
+      let nextValid = false;
+      if (!forceRecalc && state.nextMatch &&
+          Array.isArray(state.nextMatch.teamA) && Array.isArray(state.nextMatch.teamB)) {
+        const ids = [...state.nextMatch.teamA, ...state.nextMatch.teamB];
+        const unique = new Set(ids);
+        if (ids.length === 4 && unique.size === 4 && ids.every(isValidWaiting)) {
+          nextValid = true;
+        }
+      }
+
+      const eligible = getEligibleWaitingPlayers();
+      if (!nextValid) {
+        const picked = pickSmartFour(eligible, false);
+        state.nextMatch = picked ? { teamA: picked.teamA, teamB: picked.teamB } : null;
+      }
+
+      // 計算再下一組預備 (secondQueue)
+      const inNext = new Set(state.nextMatch ? [...state.nextMatch.teamA, ...state.nextMatch.teamB] : []);
+      const remaining = eligible.filter(p => !inNext.has(p.id));
+      state.secondQueue = remaining.slice(0, 4).map(p => p.id);
+    }
+
+    // =========================================================================
+    // 5. 場上與自動排點互動操作
+    // =========================================================================
+    function handleEndMatch(matchId) {
+      const idx = state.activeMatches.findIndex(m => m.id === matchId);
+      if (idx === -1) return;
+      const match = state.activeMatches[idx];
+
+      pushUndo(`結束第 ${match.seq} 場`);
+      const now = Date.now();
+      const teamAObjs = match.teamA.map(getPlayerById).filter(Boolean).map(p => ({ ...p }));
+      const teamBObjs = match.teamB.map(getPlayerById).filter(Boolean).map(p => ({ ...p }));
+
+      [...match.teamA, ...match.teamB].forEach(pid => {
+        if (state.attendance[pid]) {
+          state.attendance[pid].gamesPlayed = (state.attendance[pid].gamesPlayed || 0) + 1;
+          state.attendance[pid].lastOffTime = now;
+        }
+      });
+
+      state.history.unshift({
+        id: match.id,
+        seq: match.seq,
+        isManual: Boolean(match.isManual),
+        matchType: getMatchType(teamAObjs, teamBObjs),
+        teamA: teamAObjs,
+        teamB: teamBObjs,
+        startTime: match.startTime,
+        endTime: now
+      });
+
+      state.activeMatches.splice(idx, 1);
+      cancelSwap();
+      syncQueues(false);
+      saveState();
+      showToast(`第 ${match.seq} 場已結束並寫入紀錄！`, 'success');
+    }
+
+    function handleStartNextMatch() {
+      if (!state.nextMatch) return;
+      const ids = [...state.nextMatch.teamA, ...state.nextMatch.teamB];
+      if (ids.length !== 4) return;
+
+      const seq = state.matchCounter;
+      pushUndo(`第 ${seq} 場自動上場`);
+
+      state.activeMatches.push({
+        id: 'm_' + Date.now() + '_' + seq,
+        seq,
+        isManual: false,
+        teamA: [...state.nextMatch.teamA],
+        teamB: [...state.nextMatch.teamB],
+        startTime: Date.now()
+      });
+
+      state.matchCounter += 1;
+      state.nextMatch = null;
+      cancelSwap();
+      syncQueues(true);
+      saveState();
+      showToast(`第 ${seq} 場已開打！`, 'success');
+    }
+
+    function handleReshuffleNext() {
+      const eligible = getEligibleWaitingPlayers();
+      if (eligible.length < 4) {
+        showToast('場下可用人數不足 4 人，無法重新運算', 'warning');
+        return;
+      }
+      pushUndo('重新運算下一組');
+      const picked = pickSmartFour(eligible, true);
+      if (picked) {
+        state.nextMatch = { teamA: picked.teamA, teamB: picked.teamB };
+      }
+      cancelSwap();
+      syncQueues(false);
+      saveState();
+      showToast('已重新運算下一組上場名單', 'info');
+    }
+
+    function handleSelectForSwap(playerId) {
+      if (isManualModeActive()) return;
+      const p = getPlayerById(playerId);
+      if (!p) return;
+
+      if (!swapSourceId) {
+        swapSourceId = playerId;
+        document.getElementById('swap-selected-name').textContent = p.name;
+        document.getElementById('swap-banner').classList.remove('hidden');
+        renderMainView();
+        return;
+      }
+
+      if (swapSourceId === playerId) {
+        cancelSwap();
+        return;
+      }
+
+      const p1 = getPlayerById(swapSourceId);
+      const p2 = p;
+      pushUndo(`互換位置：${p1?.name || ''} ⇄ ${p2.name}`);
+
+      const replaceInArray = (arr, idA, idB) => arr.map(id => (id === idA ? idB : id === idB ? idA : id));
+
+      if (state.nextMatch) {
+        state.nextMatch.teamA = replaceInArray(state.nextMatch.teamA, swapSourceId, playerId);
+        state.nextMatch.teamB = replaceInArray(state.nextMatch.teamB, swapSourceId, playerId);
+      }
+      if (Array.isArray(state.secondQueue)) {
+        state.secondQueue = replaceInArray(state.secondQueue, swapSourceId, playerId);
+      }
+
+      cancelSwap();
+      syncQueues(false);
+      saveState();
+      showToast(`已互換「${p1?.name || ''}」與「${p2.name}」的位置`, 'success');
+    }
+
+    function cancelSwap() {
+      swapSourceId = null;
+      const banner = document.getElementById('swap-banner');
+      if (banner) banner.classList.add('hidden');
+      if (activeTab === 'main') renderMainView();
+    }
+
+    function handleTogglePause(playerId, event) {
+      if (event) event.stopPropagation();
+      const att = state.attendance[playerId];
+      const p = getPlayerById(playerId);
+      if (!att || !p) return;
+
+      pushUndo(`${att.paused ? '回歸排點' : '暫休'}：${p.name}`);
+      att.paused = !att.paused;
+      if (!att.paused) {
+        att.lastOffTime = Date.now();
+      }
+      cancelSwap();
+      syncQueues(false);
+      saveState();
+      showToast(`「${p.name}」已${att.paused ? '設為暫休' : '回歸排點'}`, 'info');
+    }
+
+    // =========================================================================
+    // 6. 手動開場排點模式 & 遲到球友快速報到
+    // =========================================================================
+    function toggleManualOverride(enable) {
+      state.manualModeOverride = Boolean(enable);
+      cancelSwap();
+      syncQueues(false);
+      saveState();
+    }
+
+    function handlePickManualPlayer(playerId) {
+      if (state.manualSlots.includes(playerId)) return;
+      const emptyIdx = state.manualSlots.findIndex(x => x === null);
+      if (emptyIdx === -1) {
+        showToast('已選滿 4 位，請先點擊上方槽位移除一位再更換', 'warning');
+        return;
+      }
+      state.manualSlots[emptyIdx] = playerId;
+      saveState();
+    }
+
+    function handleRemoveManualSlot(slotIdx) {
+      if (slotIdx < 0 || slotIdx > 3) return;
+      state.manualSlots[slotIdx] = null;
+      saveState();
+    }
+
+    function handleClearManualSlots() {
+      state.manualSlots = [null, null, null, null];
+      saveState();
+    }
+
+    function handleAutoSplitManual() {
+      const ids = state.manualSlots.filter(Boolean);
+      if (ids.length < 4) {
+        showToast('請先選滿 4 位球友再執行自動分隊', 'warning');
+        return;
+      }
+      const objs = ids.map(getPlayerById).filter(Boolean);
+      if (objs.length !== 4) return;
+      const split = splitFourPlayers(objs);
+      state.manualSlots = [...split.teamA, ...split.teamB];
+      saveState();
+      showToast(`已依級別平衡自動分隊（級數差 ${split.levelDiff} 級）`, 'success');
+    }
+
+    function handleStartManualMatch() {
+      if (state.manualSlots.some(x => !x)) {
+        showToast('請先選滿 4 位球友再上場', 'warning');
+        return;
+      }
+      const seq = state.matchCounter;
+      pushUndo(`第 ${seq} 場手動上場`);
+
+      state.activeMatches.push({
+        id: 'm_' + Date.now() + '_' + seq,
+        seq,
+        isManual: true,
+        teamA: [state.manualSlots[0], state.manualSlots[1]],
+        teamB: [state.manualSlots[2], state.manualSlots[3]],
+        startTime: Date.now()
+      });
+
+      state.matchCounter += 1;
+      state.manualSlots = [null, null, null, null];
+      if (getStartedMatchesCount() >= 2) {
+        state.manualModeOverride = false;
+      }
+      syncQueues(true);
+      saveState();
+      showToast(
+        getStartedMatchesCount() === 2
+          ? `第 ${seq} 場已開打！第 3 場起自動切換為智慧運算排點`
+          : `第 ${seq} 場手動開場成功！`,
+        'success'
+      );
+    }
+
+    function handleQuickLatecomerCheckin(playerId) {
+      const p = getPlayerById(playerId);
+      if (!p || state.attendance[playerId]) return;
+      const now = Date.now();
+      pushUndo(`遲到報到：${p.name}`);
+      state.attendance[playerId] = {
+        gamesPlayed: 0,
+        lastOffTime: now,
+        paused: false,
+        joinedAt: now,
+        paid: false,
+        fee: typeof p.fee === 'number' ? p.fee : state.defaultFee
+      };
+      syncQueues(false);
+      saveState();
+      showToast(`「${p.name}」報到成功，已加入場下排隊！`, 'success');
+    }
+
+    // =========================================================================
+    // 7. 臨打費用記帳操作
+    // =========================================================================
+    function handleUpdateDefaultFee(val) {
+      const fee = Math.max(0, Number(val) || 0);
+      state.defaultFee = fee;
+      saveState();
+      showToast(`預設臨打費已更新為 $${fee}`, 'info');
+    }
+
+    function confirmApplyDefaultFeeToAll() {
+      openConfirmModal(
+        '套用預設臨打費到今日全員',
+        `確定要將今日已到場所有球友的應繳金額皆設為 $${state.defaultFee} 嗎？`,
+        () => {
+          pushUndo('套用預設臨打費至全員');
+          Object.keys(state.attendance).forEach(pid => {
+            state.attendance[pid].fee = state.defaultFee;
+          });
+          saveState();
+          showToast(`已套用 $${state.defaultFee} 至今日全員`, 'success');
+        }
+      );
+    }
+
+    function confirmResetFees() {
+      openConfirmModal(
+        '🔄 重設今日繳費狀態',
+        '確定要將今日所有球友的繳費狀態重設為「❌ 未繳」嗎？（不會影響場次與名冊）',
+        () => {
+          pushUndo('重設今日繳費狀態');
+          Object.keys(state.attendance).forEach(pid => {
+            state.attendance[pid].paid = false;
+          });
+          saveState();
+          showToast('已重設今日繳費狀態', 'info');
+        }
+      );
+    }
+
+    function handleChangePlayerFee(playerId, val) {
+      const fee = Math.max(0, Number(val) || 0);
+      if (state.attendance[playerId]) {
+        state.attendance[playerId].fee = fee;
+      }
+      const p = getPlayerById(playerId);
+      if (p) p.fee = fee;
+      saveState();
+    }
+
+    function handleTogglePaid(playerId) {
+      const att = state.attendance[playerId];
+      const p = getPlayerById(playerId);
+      if (!att || !p) return;
+      pushUndo(`${att.paid ? '標記未繳' : '標記已繳'}：${p.name}`);
+      att.paid = !att.paid;
+      saveState();
+    }
+
     // =========================================================================
     // 8. 名冊管理、隨機 15 人（10男5女）、清除紀錄、JSON 備份
     // =========================================================================
