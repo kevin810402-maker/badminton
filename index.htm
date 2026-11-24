@@ -1195,9 +1195,9 @@
         att.lastOffTime = Date.now();
       }
       cancelSwap();
-      syncQueues(false);
+      syncQueues(true);
       saveState();
-      showToast(`「${p.name}」已${att.paused ? '設為暫休' : '回歸排點'}`, 'info');
+      showToast(`「${p.name}」已${att.paused ? '設為暫休' : '回歸排點'}，並重新運算順序`, 'info');
     }
 
     // =========================================================================
@@ -1285,15 +1285,15 @@
       pushUndo(`遲到報到：${p.name}`);
       state.attendance[playerId] = {
         gamesPlayed: 0,
-        lastOffTime: now,
+        lastOffTime: 0,
         paused: false,
         joinedAt: now,
         paid: false,
         fee: typeof p.fee === 'number' ? p.fee : state.defaultFee
       };
-      syncQueues(false);
+      syncQueues(true);
       saveState();
-      showToast(`「${p.name}」報到成功，已加入場下排隊！`, 'success');
+      showToast(`「${p.name}」報到成功，已重新運算下一組與後續順序！`, 'success');
     }
 
     // =========================================================================
@@ -1485,13 +1485,13 @@
           const now = Date.now();
           state.attendance[newId] = {
             gamesPlayed: 0,
-            lastOffTime: now,
+            lastOffTime: 0,
             paused: false,
             joinedAt: now,
             paid: false,
             fee
           };
-          syncQueues(false);
+          syncQueues(true);
         }
         saveState();
         showToast(`已新增球友「${name}」`, 'success');
@@ -1514,14 +1514,14 @@
         pushUndo(`標記已到場：${p.name}`);
         state.attendance[playerId] = {
           gamesPlayed: 0,
-          lastOffTime: now,
+          lastOffTime: 0,
           paused: false,
           joinedAt: now,
           paid: false,
           fee: typeof p.fee === 'number' ? p.fee : state.defaultFee
         };
       }
-      syncQueues(false);
+      syncQueues(true);
       saveState();
     }
 
@@ -1533,7 +1533,7 @@
         if (checkAll && !state.attendance[p.id]) {
           state.attendance[p.id] = {
             gamesPlayed: 0,
-            lastOffTime: now,
+            lastOffTime: 0,
             paused: false,
             joinedAt: now + idx,
             paid: false,
@@ -1541,9 +1541,9 @@
           };
         }
       });
-      syncQueues(false);
+      syncQueues(true);
       saveState();
-      showToast('已將名冊所有球友設為今日已到場', 'success');
+      showToast('已將名冊所有球友設為今日已到場，並重新運算排隊順序', 'success');
     }
 
     function confirmDeletePlayer(playerId) {
